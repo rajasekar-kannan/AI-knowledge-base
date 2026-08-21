@@ -1,0 +1,13 @@
+House_ID,House_Area_Sq_Ft,Area_Units_100_Sq_Ft,Sale_Price_Lakh,Dataset_Split
+H01,600,6,41,Training
+H02,800,8,48,Training
+H03,1000,10,61,Training
+H04,1200,12,69,Training
+H05,1400,14,82,Training
+H06,1600,16,89,Training
+H07,1800,18,101,Training
+H08,2000,20,109,Training
+H09,1100,11,64,Test
+H10,1500,15,86,Test
+H11,1700,17,94,Test
+H12,2100,21,116,Test

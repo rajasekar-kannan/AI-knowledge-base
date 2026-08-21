@@ -1,0 +1,2576 @@
+========================================================================================
+                    CLASSIFICATION — COMPLETE CONCEPTUAL GUIDE
+              A Complete Machine Learning Workflow Without Writing Code
+========================================================================================
+
+REAL-WORLD PROBLEM : Predict whether a customer will renew a subscription
+INPUT FEATURE      : Average weekly product usage hours
+MODEL              : Binary Logistic Regression
+DATASET            : Classification_Dataset.csv
+LEARNING STYLE     : Manual calculations + tables + ASCII visuals
+PROGRAMMING NEEDED : NONE
+
+========================================================================================
+HOW TO USE THIS GUIDE
+========================================================================================
+
+Keep Classification_Dataset.csv open beside this guide.
+
+Read from top to bottom the first time. On later readings, repeat the manual
+calculations with paper and a basic calculator.
+
+At every stage, ask:
+
+    1. WHAT information enters this stage?
+    2. WHAT decision is made here?
+    3. WHAT information leaves this stage?
+    4. WHAT could go wrong here?
+
+Do not begin by memorizing equations. First understand this complete picture:
+
+    Historical customers with known outcomes
+                      |
+                      v
+              Learn a probability pattern
+                      |
+                      v
+           Test it on untouched customers
+                      |
+                      v
+        Use it to classify a future customer
+
+LEGEND
+------
+
+    [INPUT]       Information supplied to a step
+    [ACTION]      Work performed during a step
+    [OUTPUT]      Result produced by a step
+    [DECISION]    Choice made from a result
+    [CRITICAL]    A mistake here can invalidate the project
+    [CHECKPOINT]  Stop and confirm understanding before continuing
+
+TARGET ENCODING
+---------------
+
+    1 = YES, customer renewed the subscription
+    0 = NO,  customer did not renew the subscription
+
+The value 1 does not mean "better," and 0 does not mean "worse." They are simply
+numeric names used for the two classes.
+
+========================================================================================
+TABLE OF CONTENTS
+========================================================================================
+
+1.  The Big Picture
+2.  The Real-World Problem
+3.  Understanding the Dataset
+4.  Essential Classification Vocabulary
+5.  The Complete Workflow
+6.  Step 1 — Frame the Problem
+7.  Step 2 — Collect and Understand the Data
+8.  Step 3 — Inspect and Clean the Data
+9.  Step 4 — Explore the Class Pattern
+10. Step 5 — Split Training and Test Data
+11. Step 6 — Create a Baseline
+12. Step 7 — Choose a Classification Model
+13. Step 8 — Train Logistic Regression Manually
+14. Step 9 — Inspect Training Predictions
+15. Step 10 — Evaluate on Unseen Test Data
+16. Understanding the Confusion Matrix and Metrics
+17. Choosing a Classification Threshold
+18. Use the Model for a New Customer
+19. What the Model Learned — and Did Not Learn
+20. Improving the Classification System
+21. Common Beginner Mistakes
+22. Complete Workflow Recap
+23. Readiness Checklist
+24. Manual Practice Exercises
+25. Answer Key
+
+========================================================================================
+1. THE BIG PICTURE
+========================================================================================
+
+WHAT ARE WE TRYING TO ACHIEVE?
+------------------------------
+
+We want a repeatable method for estimating whether a customer will renew.
+
+    Known usage + known renewal result
+                    |
+                    v
+           +------------------+
+           | LEARNING PROCESS |
+           +---------+--------+
+                     |
+                     v
+           Probability of renewal
+                     |
+                     v
+        Apply decision threshold (such as 0.50)
+                     |
+              +------+------+
+              |             |
+              v             v
+          Predict YES    Predict NO
+
+WHAT IS CLASSIFICATION?
+-----------------------
+
+Classification is supervised learning used to predict a CATEGORY or CLASS.
+
+    Input information                   Categorical output
+    -----------------------------------------------------------------
+    Customer usage history       --->   Renew / Not Renew
+    Email words                  --->   Spam / Not Spam
+    Transaction details         --->   Fraud / Legitimate
+    Medical measurements        --->   Condition / No Condition
+    Product photograph          --->   Defective / Acceptable
+
+Our output is one of two categories, so this is a BINARY CLASSIFICATION problem.
+
+CLASSIFICATION VERSUS REGRESSION
+--------------------------------
+
+    +----------------------+----------------------+----------------------+
+    | Question             | Regression           | Classification       |
+    +----------------------+----------------------+----------------------+
+    | What is predicted?   | A numerical amount   | A category           |
+    | Example              | Price = 84.5 lakh    | Renewal = Yes         |
+    | Typical final output | Number               | Class and probability|
+    | Main evaluation      | Size of errors       | Correct class counts |
+    +----------------------+----------------------+----------------------+
+
+FUNCTIONAL VIEW OF MACHINE LEARNING
+-----------------------------------
+
+TRAINING:
+
+    Customer examples with answers ---> Learning algorithm ---> Model parameters
+
+INFERENCE / PREDICTION:
+
+    New customer's usage ---> Trained parameters ---> Probability ---> Class
+
+EVALUATION:
+
+    Predicted class + actual class ---> Confusion matrix ---> Trust decision
+
+THE COMPLETE LOOP
+-----------------
+
+    +---------+   +---------+   +-------+   +-------+   +----------+
+    | DEFINE  |-->| PREPARE |-->| TRAIN |-->| TEST  |-->| USE AND  |
+    | PROBLEM |   | DATA    |   | MODEL |   | MODEL |   | MONITOR  |
+    +---------+   +---------+   +---+---+   +---+---+   +----------+
+                                      |           |
+                                      +<--Improve-+
+
+*** A classifier learns a statistical tendency. It does not discover a perfect rule. ***
+
+========================================================================================
+2. THE REAL-WORLD PROBLEM
+========================================================================================
+
+SCENARIO
+--------
+
+A software company sells a monthly subscription. Before each customer's renewal
+date, the company wants an early indication of whether that customer is likely to
+renew.
+
+For this first learning exercise, the company uses only one input:
+
+    Average Weekly Product Usage Hours
+
+It predicts one output:
+
+    Renewed Subscription: Yes or No
+
+PROBLEM STATEMENT
+-----------------
+
+    "Using average weekly usage hours, estimate the probability that a customer
+     will renew, and classify the customer as Yes or No using a chosen threshold."
+
+INPUT AND OUTPUT
+----------------
+
+    +-----------------------------+       +-----------------------------+
+    | INPUT FEATURE (X)           |       | TARGET / LABEL (y)          |
+    | Weekly usage hours          | ----> | Renewed? 1=Yes, 0=No        |
+    +-----------------------------+       +-----------------------------+
+
+WHY THIS IS A GOOD FIRST EXAMPLE
+--------------------------------
+
+  - subscription usage is easy to understand;
+  - the outcome has two clear classes;
+  - one feature allows every calculation to be followed manually;
+  - the probability curve can be visualized;
+  - realistic exceptions demonstrate that prediction is uncertain;
+  - the same workflow later applies to larger classification projects.
+
+HOW THE RESULT COULD BE USED
+----------------------------
+
+The prediction could support:
+
+  - estimating expected renewals;
+  - prioritizing customer-success conversations;
+  - planning retention campaigns;
+  - identifying predictions that require human review.
+
+The prediction should NOT automatically decide how a customer is treated. A real
+system needs more features, fairness checks, privacy controls, monitoring, and a
+clear human decision process.
+
+SUCCESS CRITERIA FOR THIS EXERCISE
+----------------------------------
+
+The learned classifier should:
+
+  1. beat a simple baseline on untouched test customers;
+  2. return understandable renewal probabilities;
+  3. make a useful trade-off between false positives and false negatives;
+  4. remain explainable in plain language;
+  5. expose uncertainty instead of pretending every answer is certain.
+
+========================================================================================
+3. UNDERSTANDING THE DATASET
+========================================================================================
+
+FILE: Classification_Dataset.csv
+
+The dataset is fictional and intentionally small for manual learning. It contains
+24 customers: 18 training examples and 6 test examples.
+
+DATA DICTIONARY
+---------------
+
++----------------------+----------------+---------------------------------------------+
+| Column               | Role           | Meaning                                     |
++----------------------+----------------+---------------------------------------------+
+| Customer_ID          | Identifier     | Unique fictional customer ID                |
+| Weekly_Usage_Hours   | Input feature  | Average product use per week                |
+| Renewed_Subscription | Target         | 1 = Yes, 0 = No                             |
+| Renewal_Label        | Helper label   | Human-readable Yes or No                    |
+| Dataset_Split        | Control field  | Training or Test                            |
++----------------------+----------------+---------------------------------------------+
+
+FULL DATASET
+------------
+
++------+----------------+---------+-------+----------+
+| ID   | Usage Hours X  | Target y| Label | Split    |
++------+----------------+---------+-------+----------+
+| C01  |              2 |       0 | No    | Training |
+| C02  |              3 |       0 | No    | Training |
+| C03  |              4 |       0 | No    | Training |
+| C04  |              5 |       0 | No    | Training |
+| C05  |              6 |       0 | No    | Training |
+| C06  |              7 |       1 | Yes   | Training |
+| C07  |              8 |       0 | No    | Training |
+| C08  |              9 |       0 | No    | Training |
+| C09  |             10 |       1 | Yes   | Training |
+| C10  |             11 |       0 | No    | Training |
+| C11  |             12 |       1 | Yes   | Training |
+| C12  |             13 |       1 | Yes   | Training |
+| C13  |             14 |       0 | No    | Training |
+| C14  |             15 |       0 | No    | Training |
+| C15  |             16 |       1 | Yes   | Training |
+| C16  |             17 |       1 | Yes   | Training |
+| C17  |             18 |       1 | Yes   | Training |
+| C18  |             19 |       1 | Yes   | Training |
+| C19  |              6 |       0 | No    | Test     |
+| C20  |             10 |       0 | No    | Test     |
+| C21  |             12 |       1 | Yes   | Test     |
+| C22  |             15 |       0 | No    | Test     |
+| C23  |             17 |       1 | Yes   | Test     |
+| C24  |             20 |       1 | Yes   | Test     |
++------+----------------+---------+-------+----------+
+
+ONE ROW MEANS
+-------------
+
+Example: C11
+
+    Customer C11 used the product for an average of 12 hours per week
+    and did renew the subscription.
+
+    +--------------+--------------------+--------------------+
+    | Customer     | Observed feature   | Known answer       |
+    +--------------+--------------------+--------------------+
+    | C11          | 12 usage hours     | 1 = Yes            |
+    +--------------+--------------------+--------------------+
+
+FEATURE VERSUS TARGET
+---------------------
+
+    Feature X = information available before making the prediction
+    Target  y = answer the model is expected to learn to predict
+
+    X = Weekly_Usage_Hours
+    y = Renewed_Subscription
+
+The ID is not a useful predictor. It identifies a row but has no meaningful
+relationship with renewal.
+
+WHY INCLUDE BOTH 0/1 AND YES/NO?
+--------------------------------
+
+    Renewed_Subscription makes manual mathematics convenient.
+    Renewal_Label makes the file easy for people to read.
+
+These two columns describe the SAME outcome. They are not two independent inputs.
+
+[CRITICAL]
+----------
+
+Renewal_Label must never be used as an input feature because it reveals the target.
+That would be target leakage: the model would receive the answer it is meant to
+predict.
+
+WHY ARE SOME OUTCOMES SURPRISING?
+---------------------------------
+
+C06 renewed with only 7 usage hours, while C13 and C14 did not renew with 14 and
+15 usage hours.
+
+That is intentional. Real behavior is influenced by factors not present here:
+
+  - price sensitivity;
+  - product satisfaction;
+  - team changes;
+  - alternative products;
+  - customer support experience;
+  - budget and timing.
+
+The model must learn a tendency, not memorize a simplistic rule.
+
+========================================================================================
+4. ESSENTIAL CLASSIFICATION VOCABULARY
+========================================================================================
+
+OBSERVATION / SAMPLE / ROW
+--------------------------
+
+One entity in the dataset. Here, one observation is one customer.
+
+FEATURE (X)
+-----------
+
+Input information used for prediction. Here, X is weekly usage hours.
+
+TARGET / LABEL (y)
+------------------
+
+The correct historical answer. Here, y is renewed or did not renew.
+
+CLASS
+-----
+
+One possible category of the target:
+
+    Class 1 = Yes, renewed
+    Class 0 = No, did not renew
+
+POSITIVE AND NEGATIVE CLASS
+---------------------------
+
+By convention in this guide:
+
+    Positive class = 1 = Yes
+    Negative class = 0 = No
+
+"Positive" is a mathematical name. It is not a moral judgment.
+
+BINARY CLASSIFICATION
+---------------------
+
+A problem with exactly two possible classes.
+
+MULTICLASS CLASSIFICATION
+-------------------------
+
+A problem with more than two classes, such as Basic / Standard / Premium.
+This guide focuses exclusively on binary classification.
+
+MODEL PARAMETER
+---------------
+
+A value learned from training data. Logistic regression learns:
+
+    b0 = intercept
+    b1 = coefficient for weekly usage hours
+
+HYPERPARAMETER
+--------------
+
+A setting chosen outside the learning process, such as regularization strength.
+The classification threshold is a decision setting, not a learned coefficient.
+
+LOGIT / WEIGHTED SCORE (z)
+--------------------------
+
+An intermediate score produced by the linear part of logistic regression:
+
+    z = b0 + b1*x
+
+The score can be any number from negative infinity to positive infinity.
+
+SIGMOID FUNCTION
+----------------
+
+A function that converts the unrestricted score z into a value from 0 to 1:
+
+                     1
+    Probability = ---------
+                  1 + e^(-z)
+
+PROBABILITY
+-----------
+
+A number between 0 and 1 representing estimated likelihood.
+
+    0.10 = estimated 10% renewal probability
+    0.50 = estimated 50% renewal probability
+    0.90 = estimated 90% renewal probability
+
+THRESHOLD
+---------
+
+A cutoff that converts probability into a class.
+
+    If probability >= 0.50, predict Yes.
+    If probability <  0.50, predict No.
+
+PREDICTED CLASS
+---------------
+
+The final Yes/No decision after applying the threshold.
+
+CONFUSION MATRIX
+----------------
+
+A 2-by-2 table that counts correct and incorrect predictions by type.
+
+    TP = True Positive     Predicted Yes, actual Yes
+    TN = True Negative     Predicted No,  actual No
+    FP = False Positive    Predicted Yes, actual No
+    FN = False Negative    Predicted No,  actual Yes
+
+LOG LOSS
+--------
+
+A training measure that rewards confident correct probabilities and strongly
+penalizes confident wrong probabilities. Lower is better.
+
+CALIBRATION
+-----------
+
+Whether predicted probabilities match real frequencies. Among many customers
+given approximately 0.70 probability, about 70% should renew in a well-calibrated
+model.
+
+INFERENCE
+---------
+
+Using the already trained model to predict an outcome for new data.
+
+[CHECKPOINT]
+------------
+
+Can you explain this distinction?
+
+    Probability: 0.713
+    Threshold:   0.500
+    Class:       Yes
+
+The probability is the model's graded estimate. The class is a decision created
+by comparing that estimate with the threshold.
+
+========================================================================================
+5. THE COMPLETE WORKFLOW
+========================================================================================
+
+HIGH-LEVEL FLOW
+---------------
+
+    +----------+    +----------+    +----------+    +----------+
+    | DEFINE   |--->| COLLECT  |--->| INSPECT  |--->| EXPLORE  |
+    | QUESTION |    | DATA     |    | & CLEAN  |    | PATTERN  |
+    +----------+    +----------+    +----------+    +-----+----+
+                                                             |
+                                                             v
+    +----------+    +----------+    +----------+    +----------+
+    | USE &    |<---| EVALUATE |<---| TRAIN    |<---| SPLIT    |
+    | MONITOR  |    | TEST SET |    | MODEL    |    | DATA     |
+    +----------+    +----------+    +----------+    +----------+
+
+DETAILED INFORMATION FLOW
+-------------------------
+
+    Raw customer records
+            |
+            v
+    Validate meaning, types, missing values, duplicates
+            |
+            v
+    Separate feature X from target y
+            |
+            v
+    +-------------------+-------------------+
+    |                                       |
+    v                                       v
+ Training set                            Test set
+ Model may learn here                   Lock it away
+    |                                       |
+    v                                       |
+ Learn b0 and b1                            |
+    |                                       |
+    v                                       |
+ Produce probabilities                     |
+    |                                       |
+    v                                       |
+ Choose threshold                          |
+    |                                       |
+    +-------------------> Evaluate <--------+
+                             |
+                             v
+                Metrics + business decision
+
+WHAT TRAINING ACTUALLY DOES
+---------------------------
+
+    BEFORE TRAINING                    AFTER TRAINING
+
+    Model form is known                Coefficients are known
+    b0 = unknown                       b0 = -3.6799
+    b1 = unknown                       b1 =  0.3166
+          |                                  |
+          v                                  v
+    Cannot calculate a useful          Can estimate renewal
+    customer probability               probability for new usage
+
+========================================================================================
+6. STEP 1 — FRAME THE PROBLEM
+========================================================================================
+
+A clear prediction question prevents later confusion.
+
+1. WHAT DOES ONE ROW REPRESENT?
+-------------------------------
+
+One customer approaching a subscription renewal decision.
+
+2. WHAT INFORMATION IS AVAILABLE?
+---------------------------------
+
+Average weekly usage hours measured before the renewal outcome.
+
+3. WHAT IS THE TARGET?
+----------------------
+
+Whether the customer renewed:
+
+    1 = Yes
+    0 = No
+
+4. WHEN IS THE PREDICTION MADE?
+-------------------------------
+
+Before the renewal outcome is known.
+
+5. WHAT KIND OF ML PROBLEM IS THIS?
+-----------------------------------
+
+    Is there a known target?                 YES -> Supervised learning
+    Is the target a number or a category?    CATEGORY
+    How many categories?                     TWO
+
+    Final answer: Binary supervised classification
+
+6. WHAT IS THE PREDICTION UNIT?
+-------------------------------
+
+One probability and one class per customer.
+
+7. HOW WILL SUCCESS BE MEASURED?
+--------------------------------
+
+We will compare the model with a baseline and calculate:
+
+  - confusion matrix;
+  - accuracy;
+  - precision;
+  - recall;
+  - F1 score;
+  - specificity;
+  - test log loss.
+
+8. WHAT ARE THE COSTS OF ERRORS?
+--------------------------------
+
+If Yes is the positive class:
+
+    False Positive:
+    Model predicts renewal, but customer does not renew.
+    Possible cost: the company misses a needed retention conversation.
+
+    False Negative:
+    Model predicts no renewal, but customer actually renews.
+    Possible cost: unnecessary outreach or incentive expense.
+
+Which error is worse depends on the real business action. That decision later
+influences the probability threshold.
+
+[OUTPUT]
+--------
+
+A precise, measurable classification problem with a defined prediction time,
+target, positive class, and business use.
+
+========================================================================================
+7. STEP 2 — COLLECT AND UNDERSTAND THE DATA
+========================================================================================
+
+WHERE COULD REAL DATA COME FROM?
+--------------------------------
+
+    +------------------+     +------------------+     +------------------+
+    | PRODUCT EVENTS   |     | SUBSCRIPTIONS    |     | CUSTOMER RECORDS |
+    | Login/use hours  |     | Renewal outcome  |     | Account identity |
+    +--------+---------+     +--------+---------+     +--------+---------+
+             |                        |                        |
+             +------------------------+------------------------+
+                                      |
+                                      v
+                         One historical dataset
+
+QUESTIONS TO ASK BEFORE MODELING
+--------------------------------
+
+  - How exactly is a usage hour calculated?
+  - Is usage measured before the renewal date?
+  - Is one row one customer or one subscription period?
+  - Are renewals consistently recorded?
+  - Are canceled, paused, and failed-payment accounts treated consistently?
+  - Does the sample represent future customers?
+  - Are privacy and consent requirements satisfied?
+
+DATA LINEAGE
+------------
+
+For every column, know:
+
+    Source ---> Definition ---> Collection time ---> Transformation ---> Owner
+
+If the meaning of a field is unclear, the model cannot make that meaning clearer.
+
+REPRESENTATIVENESS
+------------------
+
+Training data should resemble the population on which predictions will be made.
+
+Possible mismatches:
+
+  - training on annual plans, predicting monthly plans;
+  - training on one country, predicting another;
+  - training during a free promotion, predicting normal months;
+  - excluding customers who left before measurement completed;
+  - measuring usage differently in the future.
+
+LABEL QUALITY
+-------------
+
+The target must describe the intended business event.
+
+    Correct: renewal completed within the defined renewal window
+    Ambiguous: account was "active" at some unspecified time
+
+A classifier cannot be more reliable than the labels used to teach it.
+
+========================================================================================
+8. STEP 3 — INSPECT AND CLEAN THE DATA
+========================================================================================
+
+DATA QUALITY PIPELINE
+---------------------
+
+    Raw Rows
+       |
+       v
+    Check Schema ---> Check Missing ---> Check Duplicates ---> Check Ranges
+       |                                                       |
+       +-----------------------+-------------------------------+
+                               |
+                               v
+                      Validate Target Timing
+                               |
+                               v
+                         Modeling Data
+
+8.1 CHECK THE SCHEMA
+--------------------
+
++----------------------+----------------+--------------------------+
+| Column               | Expected type  | Valid examples           |
++----------------------+----------------+--------------------------+
+| Customer_ID          | Text           | C01, C02                 |
+| Weekly_Usage_Hours   | Nonnegative no.| 2, 12, 20               |
+| Renewed_Subscription | Binary integer | 0 or 1 only              |
+| Renewal_Label        | Text           | No or Yes                |
+| Dataset_Split        | Text           | Training or Test         |
++----------------------+----------------+--------------------------+
+
+8.2 CHECK MISSING VALUES
+------------------------
+
+Ask separately for feature and target:
+
+    Missing usage?
+        Investigate tracking failure, estimate carefully, or exclude the row.
+
+    Missing renewal result?
+        The row cannot supervise training until the outcome is known.
+
+Never silently convert a missing value into zero. Zero usage and unknown usage
+mean different things.
+
+8.3 CHECK DUPLICATES
+--------------------
+
+If the same customer-period appears twice, it can receive extra influence during
+training. Confirm whether repeated rows are true repeated events or data errors.
+
+8.4 CHECK RANGES AND UNITS
+--------------------------
+
+Examples of suspicious values:
+
+    -4 hours per week    impossible
+    900 hours per week   impossible
+    0.5 entered as 50    unit or percentage error
+
+The learning dataset uses whole weekly hours from 2 to 20.
+
+8.5 CHECK TARGET CONSISTENCY
+----------------------------
+
+    Renewed_Subscription = 1 must match Renewal_Label = Yes
+    Renewed_Subscription = 0 must match Renewal_Label = No
+
+8.6 REMOVE NON-PREDICTIVE IDENTIFIERS
+-------------------------------------
+
+Customer_ID is retained for tracking rows, but excluded from model input.
+
+8.7 PREVENT TARGET LEAKAGE
+--------------------------
+
+BAD FEATURE EXAMPLES:
+
+  - final renewal receipt number;
+  - payment captured after renewal;
+  - Renewal_Label itself;
+  - account status recorded after the prediction date.
+
+LEAKAGE TIMELINE
+----------------
+
+    Past data                 Prediction time              Future outcome
+       |                            |                            |
+       +---- allowed features -----+---- DO NOT LOOK ----------+
+                                    \                           /
+                                     \--- renewal label -------/
+
+[CRITICAL RULE]
+---------------
+
+Every input must be available at the exact time a real prediction would be made.
+
+DATASET QUALITY RESULT
+----------------------
+
+For this prepared exercise:
+
+  - all 24 IDs are present and unique;
+  - usage hours are valid;
+  - every target is 0 or 1;
+  - numeric and text labels agree;
+  - every row is explicitly assigned to Training or Test;
+  - there are no missing values.
+
+========================================================================================
+9. STEP 4 — EXPLORE THE CLASS PATTERN
+========================================================================================
+
+GOAL
+----
+
+Understand the data before asking a model to summarize it.
+
+9.1 COUNT THE TRAINING CLASSES
+------------------------------
+
+Training customers:
+
+    No renewal  = 10
+    Yes renewal =  8
+    Total       = 18
+
+CLASS DISTRIBUTION
+------------------
+
+    No  | ########## | 10 | 55.6%
+    Yes | ########   |  8 | 44.4%
+
+The classes are not perfectly equal, but neither class is rare in this exercise.
+
+9.2 SORT BY THE FEATURE
+-----------------------
+
+    Usage Hours:  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+    Outcome:      N  N  N  N  N  Y  N  N  Y  N  Y  Y  N  N  Y  Y  Y  Y
+
+VISUAL PATTERN
+--------------
+
+Renewal
+  Yes |                Y        Y     Y  Y        Y  Y  Y  Y
+   No | N  N  N  N  N     N  N     N        N  N
+      +--------------------------------------------------------> Usage
+        2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+
+Higher usage generally corresponds to more renewals, but the classes overlap.
+
+9.3 GROUP THE USAGE HOURS
+-------------------------
+
++-------------+-----------+---------+-------+------------------+
+| Usage Range | Customers | Renewed | No    | Renewal Rate     |
++-------------+-----------+---------+-------+------------------+
+| 2 to 7      |         6 |       1 |     5 | 1/6  = 16.7%     |
+| 8 to 13     |         6 |       3 |     3 | 3/6  = 50.0%     |
+| 14 to 19    |         6 |       4 |     2 | 4/6  = 66.7%     |
++-------------+-----------+---------+-------+------------------+
+
+OBSERVATION
+-----------
+
+    Usage range rises ---> observed renewal rate generally rises
+
+This suggests a positive relationship, but does not prove usage causes renewal.
+
+9.4 LOOK FOR PERFECT SEPARATION
+-------------------------------
+
+Could one simple rule classify every training row?
+
+    Proposed rule: usage >= 12 hours means renewal
+
+It works for many customers, but fails for:
+
+    C06:  7 hours, renewed
+    C09: 10 hours, renewed
+    C13: 14 hours, did not renew
+    C14: 15 hours, did not renew
+
+There is no perfect boundary. A probability model is more honest than pretending
+one exact usage number guarantees an outcome.
+
+========================================================================================
+10. STEP 5 — SPLIT TRAINING AND TEST DATA
+========================================================================================
+
+WHY SPLIT?
+----------
+
+The model must be evaluated on customers whose outcomes did not influence its
+learned parameters.
+
+    ALL 24 CUSTOMERS
+             |
+             +-----------------------------+
+             |                             |
+             v                             v
+    +------------------+          +------------------+
+    | TRAINING SET     |          | TEST SET         |
+    | 18 customers     |          | 6 customers      |
+    | Learn b0 and b1  |          | Final evaluation |
+    +------------------+          | Locked away      |
+                                  +------------------+
+
+TRAINING SET PURPOSE
+--------------------
+
+  - learn the intercept and usage coefficient;
+  - inspect how the model fits historical patterns;
+  - support model-development decisions.
+
+TEST SET PURPOSE
+----------------
+
+  - simulate unseen future customers;
+  - estimate how well the completed model generalizes;
+  - remain untouched until model choices are complete.
+
+THE SIX TEST CUSTOMERS
+----------------------
+
++------+-------------+----------------+
+| ID   | Usage Hours | Actual Renewal |
++------+-------------+----------------+
+| C19  |           6 | No             |
+| C20  |          10 | No             |
+| C21  |          12 | Yes            |
+| C22  |          15 | No             |
+| C23  |          17 | Yes            |
+| C24  |          20 | Yes            |
++------+-------------+----------------+
+
+[CRITICAL RULE]
+---------------
+
+Do not learn coefficients, choose features, or repeatedly adjust the model based
+on the test answers. That turns the test set into disguised training data.
+
+REAL PROJECT NOTE
+-----------------
+
+Larger projects often use:
+
+    Training set   ---> learn parameters
+    Validation set ---> choose model and threshold
+    Test set       ---> one final unbiased evaluation
+
+This tiny exercise keeps only Training and Test so every row can be followed by
+hand. Threshold alternatives are shown for learning, not selected through repeated
+test optimization in a production-quality process.
+
+========================================================================================
+11. STEP 6 — CREATE A BASELINE
+========================================================================================
+
+WHAT IS A BASELINE?
+-------------------
+
+A baseline is a simple reference rule that a useful classifier should beat.
+
+MAJORITY-CLASS BASELINE
+-----------------------
+
+Training class counts:
+
+    No  = 10
+    Yes =  8
+
+The majority class is No.
+
+BASELINE RULE
+-------------
+
+    Predict No for every customer.
+
+BASELINE TEST RESULTS
+---------------------
+
++------+--------+---------------------+----------------------+
+| ID   | Actual | Baseline Prediction | Result               |
++------+--------+---------------------+----------------------+
+| C19  | No     | No                  | Correct — TN         |
+| C20  | No     | No                  | Correct — TN         |
+| C21  | Yes    | No                  | Wrong   — FN         |
+| C22  | No     | No                  | Correct — TN         |
+| C23  | Yes    | No                  | Wrong   — FN         |
+| C24  | Yes    | No                  | Wrong   — FN         |
++------+--------+---------------------+----------------------+
+
+BASELINE CONFUSION COUNTS
+-------------------------
+
+    TP = 0       FP = 0
+    FN = 3       TN = 3
+
+BASELINE METRICS
+----------------
+
+    Accuracy = 3 correct / 6 = 50.0%
+    Recall   = 0 / (0 + 3)   = 0.0%
+    F1 score = 0.0%
+
+Precision is undefined because the baseline never predicts a positive case. In
+practice, it is commonly reported as zero with an explicit warning.
+
+WHY ACCURACY ALONE CAN MISLEAD
+------------------------------
+
+Imagine 95 of 100 customers renew. A model that always predicts Yes reaches 95%
+accuracy while learning nothing about who will not renew.
+
+Always compare class-specific errors, not only the total number correct.
+
+[DECISION]
+----------
+
+Our learned classifier should improve substantially over this no-skill rule and
+should recognize at least some Yes customers.
+
+========================================================================================
+12. STEP 7 — CHOOSE A CLASSIFICATION MODEL
+========================================================================================
+
+WHY NOT USE A STRAIGHT REGRESSION LINE DIRECTLY?
+------------------------------------------------
+
+A line can produce values below 0 or above 1:
+
+    y-hat = b0 + b1*x
+
+But a probability must remain between 0 and 1.
+
+    Invalid probability region       Valid region       Invalid region
+              < 0                 [0 ---------- 1]           > 1
+
+LOGISTIC REGRESSION SOLVES THIS
+-------------------------------
+
+Despite its name, logistic regression is a classification method.
+
+It performs two transformations:
+
+    1. Create an unrestricted weighted score.
+    2. Convert that score to a probability using the sigmoid function.
+
+    Usage x ---> z = b0 + b1*x ---> Sigmoid(z) ---> Probability ---> Class
+
+SIGMOID SHAPE
+-------------
+
+Probability
+  1.0 |                                      ********
+      |                                  ****
+  0.8 |                              ****
+      |                           ***
+  0.5 |-----------------------****------------------ decision midpoint
+      |                    ***
+  0.2 |                ****
+      |          ******
+  0.0 |**********
+      +----------------------------------------------------> Score z
+             very negative       0       very positive
+
+Properties:
+
+  - a very negative score becomes a probability near 0;
+  - a score of zero becomes exactly 0.50;
+  - a very positive score becomes a probability near 1;
+  - the curve never goes below 0 or above 1.
+
+WHY THIS MODEL FITS OUR FIRST EXERCISE
+--------------------------------------
+
+  - binary outcome;
+  - one numerical feature;
+  - interpretable coefficient;
+  - visible probability curve;
+  - calculations can be followed manually;
+  - produces both probability and class.
+
+========================================================================================
+13. STEP 8 — TRAIN LOGISTIC REGRESSION MANUALLY
+========================================================================================
+
+GOAL
+----
+
+Find b0 and b1 that give high probability to observed Yes outcomes and low
+probability to observed No outcomes across the training set.
+
+MODEL FORM
+----------
+
+    Step A — Weighted score:
+
+        z = b0 + b1*x
+
+    Step B — Probability:
+
+                    1
+        p = -----------------
+            1 + e^(-z)
+
+    Step C — Default class rule:
+
+        if p >= 0.50, predict Yes
+        if p <  0.50, predict No
+
+WHAT THE LEARNING ALGORITHM MAY CHANGE
+--------------------------------------
+
+    b0 = intercept
+    b1 = coefficient for weekly usage hours
+
+The training rows stay fixed. The algorithm repeatedly adjusts b0 and b1.
+
+----------------------------------------------------------------------------------------
+13.1 UNDERSTAND LOG LOSS
+----------------------------------------------------------------------------------------
+
+The training objective needs to judge probabilities, not only final classes.
+
+For one row:
+
+    If actual y = 1:  loss = -ln(p)
+    If actual y = 0:  loss = -ln(1 - p)
+
+INTUITION TABLE
+---------------
+
++----------+----------------------+---------------------+------------------+
+| Actual y | Predicted p(Yes)     | Interpretation      | Approx. Log Loss |
++----------+----------------------+---------------------+------------------+
+|        1 | 0.90                 | Confident correct   |            0.105 |
+|        1 | 0.60                 | Correct, uncertain  |            0.511 |
+|        1 | 0.10                 | Confident wrong     |            2.303 |
+|        0 | 0.10                 | Confident correct   |            0.105 |
+|        0 | 0.40                 | Correct, uncertain  |            0.511 |
+|        0 | 0.90                 | Confident wrong     |            2.303 |
++----------+----------------------+---------------------+------------------+
+
+The large penalty for confident mistakes discourages the model from claiming
+certainty that the training evidence does not support.
+
+----------------------------------------------------------------------------------------
+13.2 THE OPTIMIZATION LOOP
+----------------------------------------------------------------------------------------
+
+    Start with candidate b0 and b1
+                 |
+                 v
+    Calculate a probability for all 18 training customers
+                 |
+                 v
+    Compare probabilities with actual 0/1 labels
+                 |
+                 v
+    Calculate average log loss
+                 |
+                 v
+    Adjust b0 and b1 in a direction that lowers loss
+                 |
+                 +------------------------+
+                 |                        |
+                 v                        |
+        Loss still decreasing? ---YES-----+
+                 |
+                NO
+                 |
+                 v
+       Keep the best coefficients
+
+EXAMPLE SEARCH PROGRESS
+-----------------------
+
++----------------+----------------+---------------------------+
+| Candidate b0   | Candidate b1   | Average Training Log Loss |
++----------------+----------------+---------------------------+
+|         0.0000 |         0.0000 |                    0.6931 |
+|        -2.0000 |         0.1500 |                    0.5283 |
+|        -3.0000 |         0.2500 |                    0.4848 |
+|        -3.6799 |         0.3166 |                    0.4779 |
++----------------+----------------+---------------------------+
+
+Lower is better. The table illustrates the purpose of optimization; software
+normally performs many precise updates automatically.
+
+----------------------------------------------------------------------------------------
+13.3 LEARNED PARAMETERS
+----------------------------------------------------------------------------------------
+
+The fitted training data gives these rounded coefficients:
+
+    b0 = -3.6799
+    b1 =  0.3166
+
+THE LEARNED MODEL
+-----------------
+
+    z = -3.6799 + 0.3166 * Weekly_Usage_Hours
+
+                      1
+    P(Renewal=Yes) = ---------
+                     1 + e^(-z)
+
+MODEL CARD
+----------
+
+    +------------------------------------------------------------------------+
+    | INPUT             : Weekly usage hours                                  |
+    | OUTPUT 1          : Estimated probability of renewal                    |
+    | OUTPUT 2          : Predicted Yes/No class                              |
+    | INTERCEPT b0      : -3.6799                                             |
+    | USAGE COEFFICIENT :  0.3166                                             |
+    | DEFAULT THRESHOLD :  0.50                                               |
+    | TRAINING RANGE    : 2 to 19 hours                                       |
+    +------------------------------------------------------------------------+
+
+----------------------------------------------------------------------------------------
+13.4 INTERPRET THE COEFFICIENT
+----------------------------------------------------------------------------------------
+
+Because b1 is positive, higher weekly usage raises the model's estimated renewal
+probability.
+
+Logistic regression coefficients act on LOG-ODDS. Converting b1 to an odds ratio:
+
+    Odds multiplier for one extra hour = e^(0.3166)
+                                       = approximately 1.372
+
+Plain-language interpretation:
+
+    Within this small dataset, each additional weekly usage hour multiplies the
+    estimated odds of renewal by approximately 1.37, or raises the odds by about
+    37% relative to the previous odds.
+
+This does NOT mean probability always rises by 37 percentage points. Odds and
+probability are different quantities.
+
+----------------------------------------------------------------------------------------
+13.5 FIND THE 0.50 DECISION BOUNDARY
+----------------------------------------------------------------------------------------
+
+The sigmoid gives probability 0.50 when z = 0.
+
+    0 = -3.6799 + 0.3166*x
+
+    3.6799 = 0.3166*x
+
+    x = 3.6799 / 0.3166
+      = approximately 11.62 weekly hours
+
+At the default 0.50 threshold:
+
+    Usage below about 11.62 hours  ---> predict No
+    Usage at/above about 11.62     ---> predict Yes
+
+BOUNDARY VISUAL
+---------------
+
+Probability
+  1.0 |                              **************
+      |                          ****
+  0.5 |---------------------X---------------------- threshold
+      |                 ****  11.62 hours
+  0.0 |*****************
+      +------------------------------------------------> Usage hours
+        2          7          12          17         20
+
+The boundary is a consequence of BOTH the model and threshold. Changing the
+threshold changes the classification boundary without retraining b0 or b1.
+
+----------------------------------------------------------------------------------------
+13.6 CALCULATE ONE PROBABILITY BY HAND
+----------------------------------------------------------------------------------------
+
+Customer with 15 weekly usage hours:
+
+STEP 1 — CALCULATE THE SCORE
+----------------------------
+
+    z = -3.6799 + 0.3166 * 15
+      = -3.6799 + 4.7490
+      =  1.0691                    (small difference from rounding is normal)
+
+Using the more precise coefficient gives z approximately 1.0684.
+
+STEP 2 — APPLY SIGMOID
+----------------------
+
+              1
+    p = ----------------
+        1 + e^(-1.0684)
+
+    e^(-1.0684) is approximately 0.3437
+
+              1
+    p = -------------
+        1 + 0.3437
+
+    p = approximately 0.7443
+
+STEP 3 — APPLY THRESHOLD
+------------------------
+
+    0.7443 >= 0.50, therefore predict Yes.
+
+IMPORTANT
+---------
+
+The model says approximately 74.4% probability, not "this customer will certainly
+renew." In the dataset, the 15-hour customer C14 actually did not renew.
+
+========================================================================================
+14. STEP 9 — INSPECT TRAINING PREDICTIONS
+========================================================================================
+
+WHY INSPECT TRAINING RESULTS?
+-----------------------------
+
+Training results reveal what pattern the model captured and where the simple
+one-feature model disagrees with examples it learned from.
+
+TRAINING PROBABILITIES AT THRESHOLD 0.50
+----------------------------------------
+
++------+-------+--------+-------------+-----------------+----------------+
+| ID   | Hours | Actual | P(Yes)      | Predicted Class | Result         |
++------+-------+--------+-------------+-----------------+----------------+
+| C01  |     2 | No     |      0.0454 | No              | TN — correct   |
+| C02  |     3 | No     |      0.0612 | No              | TN — correct   |
+| C03  |     4 | No     |      0.0821 | No              | TN — correct   |
+| C04  |     5 | No     |      0.1094 | No              | TN — correct   |
+| C05  |     6 | No     |      0.1442 | No              | TN — correct   |
+| C06  |     7 | Yes    |      0.1879 | No              | FN — wrong     |
+| C07  |     8 | No     |      0.2410 | No              | TN — correct   |
+| C08  |     9 | No     |      0.3034 | No              | TN — correct   |
+| C09  |    10 | Yes    |      0.3742 | No              | FN — wrong     |
+| C10  |    11 | No     |      0.4507 | No              | TN — correct   |
+| C11  |    12 | Yes    |      0.5297 | Yes             | TP — correct   |
+| C12  |    13 | Yes    |      0.6071 | Yes             | TP — correct   |
+| C13  |    14 | No     |      0.6796 | Yes             | FP — wrong     |
+| C14  |    15 | No     |      0.7443 | Yes             | FP — wrong     |
+| C15  |    16 | Yes    |      0.7998 | Yes             | TP — correct   |
+| C16  |    17 | Yes    |      0.8457 | Yes             | TP — correct   |
+| C17  |    18 | Yes    |      0.8827 | Yes             | TP — correct   |
+| C18  |    19 | Yes    |      0.9117 | Yes             | TP — correct   |
++------+-------+--------+-------------+-----------------+----------------+
+
+TRAINING CONFUSION COUNTS
+-------------------------
+
+    TP = 6      FP = 2
+    FN = 2      TN = 8
+
+TRAINING METRICS
+----------------
+
+    Accuracy  = (6 + 8) / 18 = 77.8%
+    Precision = 6 / (6 + 2)  = 75.0%
+    Recall    = 6 / (6 + 2)  = 75.0%
+    F1 score  = 75.0%
+
+WHAT THE ERRORS TELL US
+-----------------------
+
+    C06 and C09 renewed despite lower usage.
+    C13 and C14 did not renew despite higher usage.
+
+Those outcomes cannot all be explained by one usage feature. The model is not
+"broken" merely because it cannot perfectly classify overlapping classes.
+
+IS 100% TRAINING ACCURACY THE GOAL?
+-----------------------------------
+
+No. Perfect training accuracy can mean:
+
+  - the problem is genuinely simple;
+  - the model learned leakage;
+  - the model memorized noise;
+  - evaluation was accidentally performed on training data.
+
+Generalization to unseen data matters more than memorization.
+
+========================================================================================
+15. STEP 10 — EVALUATE ON UNSEEN TEST DATA
+========================================================================================
+
+Now keep b0, b1, and the 0.50 threshold fixed. Reveal the six test outcomes only
+for final evaluation.
+
+TEST CALCULATIONS
+-----------------
+
++------+-------+--------+---------+--------+-----------+----------------+
+| ID   | Hours | Actual | Score z | P(Yes) | Prediction| Result         |
++------+-------+--------+---------+--------+-----------+----------------+
+| C19  |     6 | No     | -1.7806 | 0.1442 | No        | TN — correct   |
+| C20  |    10 | No     | -0.5144 | 0.3742 | No        | TN — correct   |
+| C21  |    12 | Yes    |  0.1187 | 0.5297 | Yes       | TP — correct   |
+| C22  |    15 | No     |  1.0684 | 0.7443 | Yes       | FP — wrong     |
+| C23  |    17 | Yes    |  1.7015 | 0.8457 | Yes       | TP — correct   |
+| C24  |    20 | Yes    |  2.6512 | 0.9341 | Yes       | TP — correct   |
++------+-------+--------+---------+--------+-----------+----------------+
+
+TEST CONFUSION MATRIX
+---------------------
+
+                               ACTUAL
+                         Yes               No
+                  +----------------+----------------+
+    PREDICTED Yes | TP = 3         | FP = 1         |
+                  | C21,C23,C24    | C22            |
+                  +----------------+----------------+
+    PREDICTED No  | FN = 0         | TN = 2         |
+                  | none           | C19,C20        |
+                  +----------------+----------------+
+
+TEST RESULTS SUMMARY
+--------------------
+
+    Correct predictions   = 5
+    Incorrect predictions = 1
+    Total                 = 6
+
+    Accuracy = 5 / 6 = 83.3%
+
+COMPARISON WITH BASELINE
+------------------------
+
++----------------------+------------------+------------------+
+| Measure              | Baseline         | Logistic Model   |
++----------------------+------------------+------------------+
+| Correct / Total      | 3 / 6            | 5 / 6            |
+| Accuracy             | 50.0%            | 83.3%            |
+| Yes cases recognized | 0 / 3            | 3 / 3            |
+| False negatives      | 3                | 0                |
++----------------------+------------------+------------------+
+
+TEST LOG LOSS
+-------------
+
+The six individual log losses are approximately:
+
+    0.1558, 0.4687, 0.6355, 1.3637, 0.1676, 0.0682
+
+    Average test log loss
+      = total / 6
+      = approximately 0.4766
+
+C22 contributes the largest penalty because the model gave a fairly high 0.7443
+renewal probability, but the actual outcome was No.
+
+INTERPRETATION
+--------------
+
+The model is meaningfully better than the majority baseline on this tiny test set,
+but six rows are far too few for a reliable production conclusion. One additional
+mistake would change accuracy by 16.7 percentage points.
+
+[DECISION]
+----------
+
+For learning purposes, the classifier demonstrates the complete workflow. For a
+real deployment, collect substantially more data and validate across time and
+customer segments.
+
+========================================================================================
+16. UNDERSTANDING THE CONFUSION MATRIX AND METRICS
+========================================================================================
+
+WHY ONE METRIC IS NOT ENOUGH
+----------------------------
+
+Different metrics answer different questions. Start with the confusion matrix;
+derive metrics only after understanding the four counts.
+
+THE FOUR OUTCOMES
+-----------------
+
+    +----------------+----------------+-----------------------------------------+
+    | Name           | Condition      | Meaning in this example                 |
+    +----------------+----------------+-----------------------------------------+
+    | True Positive  | Pred Yes/Yes   | Correctly predicted renewal             |
+    | True Negative  | Pred No/No     | Correctly predicted no renewal          |
+    | False Positive | Pred Yes/No    | Expected renewal, customer did not      |
+    | False Negative | Pred No/Yes    | Expected no renewal, customer renewed   |
+    +----------------+----------------+-----------------------------------------+
+
+TEST COUNTS USED BELOW
+----------------------
+
+    TP = 3     TN = 2     FP = 1     FN = 0
+
+----------------------------------------------------------------------------------------
+16.1 ACCURACY
+----------------------------------------------------------------------------------------
+
+QUESTION:
+
+    "What fraction of all predictions were correct?"
+
+FORMULA:
+
+                 TP + TN
+    Accuracy = -----------------
+               TP + TN + FP + FN
+
+CALCULATION:
+
+               3 + 2
+    Accuracy = ------- = 5/6 = 83.3%
+                  6
+
+USE WHEN:
+
+  - classes are reasonably balanced;
+  - false positives and false negatives have similar importance.
+
+CAUTION:
+
+Accuracy can hide failure on a rare or important class.
+
+----------------------------------------------------------------------------------------
+16.2 PRECISION
+----------------------------------------------------------------------------------------
+
+QUESTION:
+
+    "When the model predicts Yes, how often is it correct?"
+
+FORMULA:
+
+                    TP
+    Precision = -----------
+                 TP + FP
+
+CALCULATION:
+
+                3
+    Precision = ----- = 3/4 = 75.0%
+               3 + 1
+
+INTERPRETATION:
+
+Of four customers predicted to renew, three actually renewed.
+
+PRIORITIZE PRECISION WHEN:
+
+False positives are especially costly.
+
+----------------------------------------------------------------------------------------
+16.3 RECALL / SENSITIVITY
+----------------------------------------------------------------------------------------
+
+QUESTION:
+
+    "Of all customers who actually renewed, how many did the model find?"
+
+FORMULA:
+
+                 TP
+    Recall = -----------
+              TP + FN
+
+CALCULATION:
+
+             3
+    Recall = ----- = 3/3 = 100.0%
+            3 + 0
+
+INTERPRETATION:
+
+The model found all three actual renewals in this small test set.
+
+PRIORITIZE RECALL WHEN:
+
+False negatives are especially costly.
+
+----------------------------------------------------------------------------------------
+16.4 SPECIFICITY
+----------------------------------------------------------------------------------------
+
+QUESTION:
+
+    "Of all customers who actually did not renew, how many did the model identify?"
+
+FORMULA:
+
+                      TN
+    Specificity = -----------
+                   TN + FP
+
+CALCULATION:
+
+                  2
+    Specificity = ----- = 2/3 = 66.7%
+                 2 + 1
+
+INTERPRETATION:
+
+The model found two of the three actual non-renewals.
+
+----------------------------------------------------------------------------------------
+16.5 F1 SCORE
+----------------------------------------------------------------------------------------
+
+QUESTION:
+
+    "What single score balances precision and recall?"
+
+FORMULA:
+
+                      Precision * Recall
+    F1 = 2 * --------------------------------
+                    Precision + Recall
+
+CALCULATION:
+
+                    0.75 * 1.00
+    F1 = 2 * -------------------------
+                  0.75 + 1.00
+
+       = 1.50 / 1.75
+       = 0.8571
+       = 85.7%
+
+F1 is useful when positive-class performance matters and the two error types need
+a balanced summary.
+
+METRIC SUMMARY
+--------------
+
++-------------+--------+------------------------------------------------+
+| Metric      | Result | Main question                                  |
++-------------+--------+------------------------------------------------+
+| Accuracy    | 83.3%  | How many total predictions were correct?       |
+| Precision   | 75.0%  | Can we trust a Yes prediction?                 |
+| Recall      |100.0%  | Did we find actual Yes cases?                  |
+| Specificity | 66.7%  | Did we find actual No cases?                   |
+| F1          | 85.7%  | Are precision and recall jointly strong?       |
++-------------+--------+------------------------------------------------+
+
+*** Always state which class is positive when reporting precision, recall, or F1. ***
+
+========================================================================================
+17. CHOOSING A CLASSIFICATION THRESHOLD
+========================================================================================
+
+THE MODEL AND THE DECISION ARE SEPARATE
+---------------------------------------
+
+    Trained model ---> Probability ---> Threshold policy ---> Yes/No action
+
+Changing a threshold does not retrain the probability model.
+
+DEFAULT THRESHOLD
+-----------------
+
+    p >= 0.50 ---> Yes
+    p <  0.50 ---> No
+
+But 0.50 is a convention, not a universal law.
+
+LOWER THRESHOLD
+---------------
+
+    More customers become predicted Yes.
+    Recall usually rises.
+    False positives usually rise.
+    Precision may fall.
+
+HIGHER THRESHOLD
+----------------
+
+    Fewer customers become predicted Yes.
+    Precision usually rises.
+    False positives usually fall.
+    Recall may fall.
+
+TEST-SET ILLUSTRATION
+---------------------
+
++-----------+----+----+----+----+----------+-----------+--------+--------+
+| Threshold | TP | TN | FP | FN | Accuracy | Precision | Recall | F1     |
++-----------+----+----+----+----+----------+-----------+--------+--------+
+|      0.30 |  3 |  1 |  2 |  0 |    66.7% |     60.0% | 100.0% |  75.0% |
+|      0.50 |  3 |  2 |  1 |  0 |    83.3% |     75.0% | 100.0% |  85.7% |
+|      0.80 |  2 |  3 |  0 |  1 |    83.3% |    100.0% |  66.7% |  80.0% |
++-----------+----+----+----+----+----------+-----------+--------+--------+
+
+Two thresholds can have the same accuracy but very different business behavior.
+
+THRESHOLD DECISION TREE
+-----------------------
+
+                         What matters more?
+                                |
+                 +--------------+--------------+
+                 |                             |
+                 v                             v
+       Avoid missing Yes cases       Avoid false Yes predictions
+                 |                             |
+                 v                             v
+        Consider lower threshold      Consider higher threshold
+        Emphasize recall              Emphasize precision
+
+BUSINESS COST EXAMPLE
+---------------------
+
+Suppose predicting Yes means the company does not send a retention offer.
+
+    False Positive:
+    Customer predicted Yes, actually No.
+    Cost may be a lost subscription.
+
+    False Negative:
+    Customer predicted No, actually Yes.
+    Cost may be an unnecessary discount.
+
+If a lost subscription costs much more than an unnecessary discount, the company
+might define the positive class as "will not renew" or lower the action threshold
+for retention risk. The target definition must match the decision being supported.
+
+[CRITICAL]
+----------
+
+Choose thresholds using validation data and documented business costs. Do not
+search the final test set repeatedly for the threshold that looks best.
+
+========================================================================================
+18. USE THE MODEL FOR A NEW CUSTOMER
+========================================================================================
+
+SCENARIO
+--------
+
+A new customer averages 14.5 product usage hours per week. The renewal outcome is
+not yet known.
+
+STEP 1 — VERIFY INPUT COMPATIBILITY
+-----------------------------------
+
+  - same definition of weekly usage? Yes
+  - same unit: hours per week? Yes
+  - value available before renewal? Yes
+  - within training range 2 to 19? Yes
+
+STEP 2 — CALCULATE THE WEIGHTED SCORE
+-------------------------------------
+
+    z = -3.6799 + 0.3166 * 14.5
+      = approximately 0.9101
+
+STEP 3 — CONVERT SCORE TO PROBABILITY
+-------------------------------------
+
+              1
+    p = ----------------
+        1 + e^(-0.9101)
+
+    p = approximately 0.7130
+
+STEP 4 — APPLY THE THRESHOLD
+----------------------------
+
+    0.7130 >= 0.50
+
+    Predicted class = Yes
+
+PREDICTION RECORD
+-----------------
+
+    +------------------------------------------------------------------+
+    | Customer input          : 14.5 weekly usage hours                 |
+    | Estimated P(renewal)    : 0.7130 = 71.3%                          |
+    | Decision threshold      : 0.50                                    |
+    | Predicted class         : Yes                                     |
+    | Model training range    : 2 to 19 hours                           |
+    +------------------------------------------------------------------+
+
+WHAT TO COMMUNICATE
+-------------------
+
+GOOD:
+
+    "The model estimates a 71% renewal probability and classifies this customer
+     as Yes at the 0.50 threshold."
+
+BAD:
+
+    "The customer will definitely renew."
+
+PROBABILITY BANDS FOR HUMAN INTERPRETATION
+------------------------------------------
+
+These bands are illustrative policy labels, not mathematical laws:
+
+    0.00 to 0.30 ---> lower estimated renewal probability
+    0.30 to 0.70 ---> uncertain / review context
+    0.70 to 1.00 ---> higher estimated renewal probability
+
+At 0.713, this example is just inside the higher-probability band. The closeness
+to 0.70 should remain visible; rounding it to "certain Yes" would lose information.
+
+========================================================================================
+19. WHAT THE MODEL LEARNED — AND DID NOT LEARN
+========================================================================================
+
+WHAT IT LEARNED
+---------------
+
+  - renewal probability generally increases with weekly usage;
+  - the learned coefficient is positive;
+  - the 0.50 boundary is around 11.62 weekly hours;
+  - each extra hour multiplies estimated renewal odds by about 1.37;
+  - historical outcomes contain overlap and uncertainty.
+
+WHAT IT DID NOT LEARN
+---------------------
+
+The model does not know:
+
+  - subscription price;
+  - customer satisfaction;
+  - plan type;
+  - length of customer relationship;
+  - number of support issues;
+  - team size;
+  - competitor offers;
+  - whether a customer can afford renewal;
+  - why any individual customer made a decision.
+
+ASSOCIATION IS NOT CAUSATION
+----------------------------
+
+The model observes:
+
+    higher usage <---- associated with ----> more renewals
+
+It does not prove:
+
+    forcing extra usage ---- causes ----> renewal
+
+Hidden factors might influence both usage and renewal.
+
+PROBABILITY IS NOT CERTAINTY
+----------------------------
+
+    P(Yes) = 0.74
+
+means an estimated tendency for comparable customers. A single customer's final
+outcome is still either Yes or No.
+
+INTERPOLATION VERSUS EXTRAPOLATION
+----------------------------------
+
+Training range: 2 to 19 hours.
+
+    14.5 hours ---> interpolation; supported by nearby examples
+    30 hours   ---> extrapolation; beyond observed training range
+
+Although sigmoid still returns a number for 30 hours, that number is not strong
+evidence that the real-world relationship remains valid there.
+
+MODEL BOUNDARY
+--------------
+
+    DATA understands historical rows.
+    MODEL summarizes a pattern in those rows.
+    THRESHOLD translates probability into a decision.
+    BUSINESS PROCESS decides what action, if any, follows.
+
+These four layers should not be confused.
+
+========================================================================================
+20. IMPROVING THE CLASSIFICATION SYSTEM
+========================================================================================
+
+1. COLLECT MORE REPRESENTATIVE DATA
+-----------------------------------
+
+Twenty-four customers are useful for teaching, not for production. More historical
+periods and customer segments reduce uncertainty and enable reliable validation.
+
+2. ADD FEATURES AVAILABLE BEFORE RENEWAL
+----------------------------------------
+
+Possible inputs:
+
+  - plan type;
+  - subscription age;
+  - recent usage trend;
+  - number of active days;
+  - customer-support interactions;
+  - feature adoption;
+  - payment failures;
+  - customer satisfaction score.
+
+Every feature must have a clear definition, collection time, and business reason.
+
+3. USE TIME-AWARE EVALUATION
+----------------------------
+
+For a future prediction, training on earlier months and testing on later months is
+often more realistic than randomly mixing all dates.
+
+    Earlier customers ---> Train
+    Later customers   ---> Test future behavior
+
+4. CHECK CLASS IMBALANCE
+------------------------
+
+If only a small fraction belongs to one class:
+
+  - do not rely on accuracy alone;
+  - inspect precision, recall, and class counts;
+  - consider appropriate sampling or weighting during training;
+  - preserve the real class distribution in final evaluation.
+
+5. TUNE THE THRESHOLD TO THE ACTION
+-----------------------------------
+
+Choose a threshold from error costs and validation performance. A model may support
+several actions with different thresholds:
+
+    very low renewal probability ---> human retention review
+    medium probability            ---> no automatic action
+    very high probability         ---> planning estimate only
+
+6. CHECK PROBABILITY CALIBRATION
+--------------------------------
+
+Group many predictions into probability bands and compare predicted with observed
+rates.
+
+    Predicted around 20% ---> did roughly 20% renew?
+    Predicted around 70% ---> did roughly 70% renew?
+
+7. ANALYZE ERRORS BY SEGMENT
+----------------------------
+
+Overall performance can hide weaker results for:
+
+  - countries;
+  - plan types;
+  - new versus long-term customers;
+  - small versus large organizations;
+  - accessibility or demographic groups where legally and ethically appropriate.
+
+8. MONITOR AFTER DEPLOYMENT
+---------------------------
+
+    New data ---> Predictions ---> Outcomes arrive ---> Compare ---> Investigate
+                                                            |
+                                                            v
+                                                   Retrain if justified
+
+Monitor:
+
+  - input distributions;
+  - missing-value rates;
+  - class balance;
+  - accuracy, precision, recall, and calibration;
+  - changes in customer behavior;
+  - changes in product or pricing;
+  - fairness and adverse impacts.
+
+9. KEEP A HUMAN REVIEW PATH
+---------------------------
+
+Especially for uncertain or high-impact cases, allow humans to review context the
+model does not contain.
+
+========================================================================================
+21. COMMON BEGINNER MISTAKES
+========================================================================================
+
+MISTAKE 1 — CONFUSING PROBABILITY WITH CLASS
+---------------------------------------------
+
+Wrong: "The model output is Yes."
+
+Better: "The model output is 0.713 probability; the 0.50 policy converts it to Yes."
+
+MISTAKE 2 — USING THE ANSWER AS AN INPUT
+----------------------------------------
+
+Using Renewal_Label, payment-after-renewal, or future account status creates
+leakage and unrealistic performance.
+
+MISTAKE 3 — EVALUATING ON TRAINING DATA ONLY
+--------------------------------------------
+
+Training performance measures fit to known examples, not generalization.
+
+MISTAKE 4 — REPEATEDLY LOOKING AT THE TEST SET
+----------------------------------------------
+
+Every test-driven adjustment leaks information from the test into development.
+
+MISTAKE 5 — REPORTING ACCURACY ALONE
+------------------------------------
+
+Accuracy can appear high while the model ignores an important class.
+
+MISTAKE 6 — NOT NAMING THE POSITIVE CLASS
+------------------------------------------
+
+Precision and recall are ambiguous unless the report states what "positive" means.
+
+MISTAKE 7 — ASSUMING 0.50 IS ALWAYS THE RIGHT THRESHOLD
+------------------------------------------------------
+
+The right threshold depends on business costs, capacity, and validation evidence.
+
+MISTAKE 8 — TREATING 0/1 AS NUMERICAL MAGNITUDES
+------------------------------------------------
+
+The distance between class labels is not a measured quantity. The labels name
+categories.
+
+MISTAKE 9 — EXPECTING PERFECT SEPARATION
+----------------------------------------
+
+Real classes overlap because inputs are incomplete and outcomes contain noise.
+
+MISTAKE 10 — IGNORING DATA COLLECTION TIME
+-------------------------------------------
+
+An input available after renewal cannot support a prediction made before renewal.
+
+MISTAKE 11 — BELIEVING CORRELATION PROVES CAUSATION
+--------------------------------------------------
+
+Usage may signal customer value, but the classifier does not prove that increasing
+usage causes renewal.
+
+MISTAKE 12 — TRUSTING PROBABILITIES OUTSIDE THE TRAINING RANGE
+--------------------------------------------------------------
+
+The equation can calculate them, but historical support may be absent.
+
+MISTAKE 13 — ROUNDING TOO EARLY
+-------------------------------
+
+Use precise coefficients during calculation and round only displayed results.
+
+MISTAKE 14 — FORGETTING THE BASELINE
+------------------------------------
+
+A complex model that does not beat a simple rule has not demonstrated value.
+
+MISTAKE 15 — TURNING A PREDICTION DIRECTLY INTO AN AUTOMATIC ACTION
+-----------------------------------------------------------------
+
+Prediction, policy, human judgment, and customer treatment are separate concerns.
+
+========================================================================================
+22. COMPLETE WORKFLOW RECAP
+========================================================================================
+
+DIAGRAM 1 — END-TO-END CLASSIFICATION PIPELINE
+----------------------------------------------
+
+    +------------------------------------------------------------------------+
+    | RAW HISTORICAL CUSTOMER DATA                                           |
+    | Usage events + renewal outcomes                                        |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | QUALITY AND TIMING CHECKS                                              |
+    | Schema -> Missing -> Duplicates -> Ranges -> Leakage                   |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | SPLIT                                                                  |
+    | Training set: learn                         Test set: lock away         |
+    +---------------------------+--------------------------------------------+
+                                |
+                                v
+    +------------------------------------------------------------------------+
+    | TRAIN LOGISTIC REGRESSION                                              |
+    | Try b0,b1 -> probabilities -> log loss -> improve -> keep best         |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | PROBABILITY MODEL                                                      |
+    | z = -3.6799 + 0.3166*x       p = 1 / (1 + e^(-z))                     |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | DECISION POLICY                                                        |
+    | Compare p with threshold -> predicted Yes or No                        |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | FINAL EVALUATION                                                       |
+    | Confusion matrix -> Accuracy -> Precision -> Recall -> F1 -> Log loss  |
+    +-----------------------------------+------------------------------------+
+                                        |
+                                        v
+    +------------------------------------------------------------------------+
+    | USE RESPONSIBLY AND MONITOR                                            |
+    | Store model/version -> predict -> observe outcomes -> detect drift     |
+    +------------------------------------------------------------------------+
+
+DIAGRAM 2 — ONE PREDICTION
+--------------------------
+
+    New customer: 14.5 hours
+                 |
+                 v
+    z = -3.6799 + 0.3166(14.5)
+                 |
+                 v
+             z = 0.9101
+                 |
+                 v
+            Sigmoid(z)
+                 |
+                 v
+          p(Yes) = 0.7130
+                 |
+                 v
+       Is 0.7130 >= 0.50?
+            /             \
+          Yes              No
+           |                |
+           v                v
+      Predict Yes      Predict No
+
+DIAGRAM 3 — DEBUGGING A CLASSIFIER
+----------------------------------
+
+                         Model performs poorly
+                                  |
+                +-----------------+------------------+
+                |                                    |
+                v                                    v
+      Poor on training data                 Good train, poor test
+                |                                    |
+                v                                    v
+      Possible underfitting                 Possible overfitting,
+      weak feature, bad labels              leakage, or distribution shift
+                |                                    |
+                v                                    v
+      Check data definitions,               Simplify, regularize,
+      add useful features,                  collect more data,
+      improve model form                    verify split and timing
+
+                +-----------------+------------------+
+                                  |
+                                  v
+                  Good accuracy, poor class metric?
+                                  |
+                                  v
+                   Check imbalance, threshold,
+                   confusion matrix, error costs
+
+DIAGRAM 4 — KNOWLEDGE DEPENDENCY MAP
+------------------------------------
+
+    LEVEL 5 — READY FOR A FIRST CLASSIFICATION PROJECT
+       [Frame problem] [Build pipeline] [Evaluate] [Explain decision]
+                                  |
+    LEVEL 4 — DECISION AND EVALUATION
+       [Threshold] [Confusion matrix] [Precision] [Recall] [F1]
+                                  |
+    LEVEL 3 — MODEL MECHANICS
+       [Weighted score] [Sigmoid] [Probability] [Log loss]
+                                  |
+    LEVEL 2 — DATA WORKFLOW
+       [Feature/target] [Cleaning] [Split] [Leakage prevention]
+                                  |
+    LEVEL 1 — BASIC CONCEPTS
+       [Rows/columns] [0/1 labels] [Percentages] [Simple algebra]
+
+WORKFLOW IN ONE SENTENCE
+------------------------
+
+Define the decision, prepare historical labeled data, protect an unseen test set,
+learn probabilities, convert them to classes using a justified threshold, evaluate
+each type of error, and monitor whether the system remains useful and responsible.
+
+========================================================================================
+23. READINESS CHECKLIST
+========================================================================================
+
+Before moving to code, answer each statement honestly.
+
+LEGEND
+------
+
+    [M] = MANDATORY — understand before starting implementation
+    [R] = RECOMMENDED — strengthen during the first project
+    [N] = NICE TO HAVE — deepen later
+
+----------------------------------------------------------------------------------------
+CATEGORY A — PROBLEM FRAMING
+----------------------------------------------------------------------------------------
+
+[M] I can explain why renewal is a classification problem.
+[M] I can define one row, the feature, and the target.
+[M] I can state when the prediction is made.
+[M] I can name the positive class explicitly.
+[M] I can describe the business action supported by the prediction.
+[M] I can explain why false positives and false negatives have different costs.
+
+----------------------------------------------------------------------------------------
+CATEGORY B — DATA UNDERSTANDING
+----------------------------------------------------------------------------------------
+
+[M] I can read every column in Classification_Dataset.csv.
+[M] I understand why Customer_ID is not used as a predictive feature.
+[M] I understand why Renewal_Label must not be an input.
+[M] I can identify missing, duplicate, invalid, and inconsistent rows.
+[M] I can explain target leakage using a timeline.
+[M] I can explain why training data must represent future customers.
+[R] I can identify possible label-quality problems.
+
+----------------------------------------------------------------------------------------
+CATEGORY C — MODEL MECHANICS
+----------------------------------------------------------------------------------------
+
+[M] I can explain z = b0 + b1*x in plain language.
+[M] I understand that sigmoid converts z into a 0-to-1 probability.
+[M] I can distinguish probability from predicted class.
+[M] I can manually classify a probability using a threshold.
+[M] I can explain why logistic regression is used for binary classification.
+[M] I understand that training learns b0 and b1 by lowering log loss.
+[R] I can interpret the positive usage coefficient.
+[R] I can explain an odds ratio in plain language.
+
+----------------------------------------------------------------------------------------
+CATEGORY D — EVALUATION
+----------------------------------------------------------------------------------------
+
+[M] I can explain why the test set remains untouched during training.
+[M] I can compare the model with a majority-class baseline.
+[M] I can construct a confusion matrix from six predictions.
+[M] I can identify TP, TN, FP, and FN for this positive class.
+[M] I can calculate and interpret accuracy.
+[M] I can calculate and interpret precision.
+[M] I can calculate and interpret recall.
+[M] I can calculate and interpret F1 score.
+[M] I understand why accuracy alone can be misleading.
+[R] I can interpret specificity and log loss.
+
+----------------------------------------------------------------------------------------
+CATEGORY E — DECISION AND RESPONSIBILITY
+----------------------------------------------------------------------------------------
+
+[M] I can explain how changing the threshold changes predictions.
+[M] I know a lower threshold usually increases positive predictions.
+[M] I know a higher threshold usually decreases positive predictions.
+[M] I can select a metric based on the cost of an error.
+[M] I understand association is not causation.
+[M] I understand that a probability is not certainty.
+[M] I know not to trust extrapolation automatically.
+[R] I can describe calibration, drift, monitoring, and human review.
+
+SCORING YOUR READINESS
+----------------------
+
+Count only [M] items answered YES:
+
+    Problem Framing:              ____ / 6     need at least 5
+    Data Understanding:           ____ / 6     need at least 5
+    Model Mechanics:              ____ / 6     need at least 5
+    Evaluation:                   ____ / 9     need at least 8
+    Decision & Responsibility:    ____ / 7     need at least 6
+                                  --------
+    TOTAL MANDATORY:              ____ / 34    need at least 29
+
+READINESS LEVELS
+----------------
+
+    34 / 34  FULLY READY
+             Start a small classification implementation.
+
+    29–33    MOSTLY READY
+             Start the project and review weak areas in parallel.
+
+    22–28    PARTIALLY READY
+             Repeat targeted manual exercises before implementation.
+
+    Below 22 NOT YET READY
+             Revisit one category at a time, beginning with data and workflow.
+
+FINAL CONCEPTUAL GATE
+---------------------
+
+Without looking back, explain this complete chain aloud:
+
+    Customer data -> feature/target -> split -> baseline -> train -> probability
+    -> threshold -> class -> confusion matrix -> metric -> business decision
+
+If you can explain what enters and leaves every arrow, you understand the overall
+functional picture and are ready to connect that picture to code.
+
+========================================================================================
+24. MANUAL PRACTICE EXERCISES
+========================================================================================
+
+EXERCISE 1 — IDENTIFY THE ML PROBLEM
+------------------------------------
+
+For each output, write Regression or Classification:
+
+    A. Predict next month's subscription revenue amount.
+    B. Predict whether an account will renew.
+    C. Predict number of support tickets next week.
+    D. Predict whether a payment is fraudulent.
+
+EXERCISE 2 — IDENTIFY ROLES
+---------------------------
+
+For C21, identify:
+
+    A. observation ID;
+    B. input feature and value;
+    C. target and value;
+    D. dataset split.
+
+EXERCISE 3 — CLASS COUNTS
+-------------------------
+
+Count Yes and No outcomes in the training rows. Identify the majority class and
+write the majority baseline rule.
+
+EXERCISE 4 — LEAKAGE CHECK
+--------------------------
+
+Which proposed feature leaks the answer?
+
+    A. usage hours measured before renewal;
+    B. plan type known before renewal;
+    C. payment receipt generated after successful renewal;
+    D. account age before renewal.
+
+EXERCISE 5 — CALCULATE A SCORE
+------------------------------
+
+Use:
+
+    z = -3.6799 + 0.3166*x
+
+Calculate z for a customer with 10 weekly usage hours.
+
+EXERCISE 6 — APPLY A THRESHOLD
+--------------------------------
+
+Classify each probability at threshold 0.50:
+
+    A. 0.18
+    B. 0.50
+    C. 0.74
+    D. 0.49
+
+EXERCISE 7 — BUILD A CONFUSION MATRIX
+-------------------------------------
+
+Use these actual and predicted classes:
+
+    Row:        1    2    3    4    5    6
+    Actual:    Yes   No  Yes   No   No  Yes
+    Predicted: Yes  Yes   No   No   No  Yes
+
+Count TP, TN, FP, and FN when Yes is positive.
+
+EXERCISE 8 — CALCULATE METRICS
+------------------------------
+
+Using Exercise 7, calculate:
+
+    A. accuracy;
+    B. precision;
+    C. recall;
+    D. F1 score.
+
+EXERCISE 9 — THRESHOLD REASONING
+--------------------------------
+
+If false positive renewal predictions are very costly, would you generally raise
+or lower the Yes threshold? Which metric deserves extra attention?
+
+EXERCISE 10 — INTERPRET A PROBABILITY
+-------------------------------------
+
+Write one responsible sentence communicating:
+
+    P(renewal) = 0.68
+    threshold  = 0.50
+
+EXERCISE 11 — FIND THE BOUNDARY
+-------------------------------
+
+Use b0 = -3.6799 and b1 = 0.3166. At what usage value does z equal zero?
+
+EXERCISE 12 — ERROR TYPE
+------------------------
+
+The model predicts Yes, but the customer does not renew. Name the error and give
+one possible business consequence.
+
+EXERCISE 13 — EXTRAPOLATION
+---------------------------
+
+The model was trained on 2–19 usage hours. Why should a prediction for 40 hours be
+treated cautiously even though the equation returns a valid probability?
+
+EXERCISE 14 — IMPROVE THE FEATURE SET
+-------------------------------------
+
+List three features that could explain why a high-usage customer does not renew.
+Each feature must be available before the renewal outcome.
+
+EXERCISE 15 — COMPLETE THE WORKFLOW
+-----------------------------------
+
+Fill the blanks:
+
+    Define -> Collect -> ______ -> Explore -> Split -> Baseline -> ______
+           -> Probability -> ______ -> Class -> Evaluate -> Monitor
+
+========================================================================================
+25. ANSWER KEY
+========================================================================================
+
+ANSWER 1
+--------
+
+    A. Regression — output is a revenue amount.
+    B. Classification — output is renew or not renew.
+    C. Regression — output is a numeric count.
+    D. Classification — output is fraud or legitimate.
+
+ANSWER 2
+--------
+
+    A. ID: C21
+    B. Feature: Weekly_Usage_Hours = 12
+    C. Target: Renewed_Subscription = 1, Yes
+    D. Split: Test
+
+ANSWER 3
+--------
+
+    Training Yes = 8
+    Training No  = 10
+    Majority     = No
+    Baseline     = predict No for every customer
+
+ANSWER 4
+--------
+
+    C. A receipt generated after successful renewal reveals the future outcome.
+
+ANSWER 5
+--------
+
+    z = -3.6799 + 0.3166 * 10
+      = -3.6799 + 3.1660
+      = -0.5139
+
+Using the more precise learned coefficient gives approximately -0.5144.
+
+ANSWER 6
+--------
+
+At threshold 0.50:
+
+    A. 0.18 -> No
+    B. 0.50 -> Yes because the rule uses >=
+    C. 0.74 -> Yes
+    D. 0.49 -> No
+
+ANSWER 7
+--------
+
+    Row 1: TP
+    Row 2: FP
+    Row 3: FN
+    Row 4: TN
+    Row 5: TN
+    Row 6: TP
+
+    TP = 2, TN = 2, FP = 1, FN = 1
+
+ANSWER 8
+--------
+
+    Accuracy  = (2 + 2) / 6 = 66.7%
+    Precision = 2 / (2 + 1) = 66.7%
+    Recall    = 2 / (2 + 1) = 66.7%
+    F1        = 66.7%
+
+ANSWER 9
+--------
+
+Generally raise the Yes threshold so fewer uncertain cases become Yes predictions.
+Give extra attention to precision and the false-positive count. The final choice
+must use actual business costs and validation evidence.
+
+ANSWER 10
+---------
+
+Example:
+
+    "The model estimates a 68% renewal probability and classifies the customer as
+     Yes at the 50% threshold; this is an estimate, not a guaranteed outcome."
+
+ANSWER 11
+---------
+
+    0 = -3.6799 + 0.3166*x
+
+    x = 3.6799 / 0.3166
+      = approximately 11.62 hours
+
+ANSWER 12
+---------
+
+False Positive. One possible consequence is missing a retention intervention for
+a customer who ultimately does not renew.
+
+ANSWER 13
+---------
+
+Forty hours is far outside the 2–19 hour training range. The model has no nearby
+historical evidence that the same learned relationship remains valid there.
+
+ANSWER 14
+---------
+
+Possible answers include subscription price, satisfaction score, support issues,
+plan type, recent usage decline, payment failures, or a competitor offer—provided
+each is genuinely available before the prediction time.
+
+ANSWER 15
+---------
+
+    Define -> Collect -> CLEAN -> Explore -> Split -> Baseline -> TRAIN
+           -> Probability -> THRESHOLD -> Class -> Evaluate -> Monitor
+
+========================================================================================
+RECOMMENDED FIRST IMPLEMENTATION AFTER THIS GUIDE
+========================================================================================
+
+When the conceptual checklist is complete, implement this exact dataset in small
+stages:
+
+    1. load and inspect the CSV;
+    2. separate training and test rows;
+    3. separate X from y;
+    4. create the majority baseline;
+    5. fit one-feature logistic regression;
+    6. request probabilities before classes;
+    7. apply and compare thresholds;
+    8. build the confusion matrix;
+    9. calculate metrics;
+   10. compare every result with the manual values in this guide.
+
+The purpose of that implementation is not merely to make software run. It is to
+connect each line of code to a workflow step you already understand.
+
+========================================================================================
+END OF CLASSIFICATION COMPLETE GUIDE
+========================================================================================

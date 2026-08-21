@@ -1,0 +1,1728 @@
+========================================================================================
+                     REGRESSION — COMPLETE CONCEPTUAL GUIDE
+              A Complete Machine Learning Workflow Without Writing Code
+========================================================================================
+
+REAL-WORLD PROBLEM : Predict a house's sale price from its floor area
+MODEL               : Simple Linear Regression
+DATASET              : Regression_Dataset.csv
+LEARNING STYLE       : Manual calculations + tables + ASCII visuals
+PROGRAMMING REQUIRED : NONE
+
+========================================================================================
+HOW TO USE THIS GUIDE
+========================================================================================
+
+Read the guide from top to bottom with Regression_Dataset.csv open beside it.
+
+For every stage, ask three questions:
+
+    1. WHAT are we doing?
+    2. WHY are we doing it?
+    3. WHAT decision comes from the result?
+
+Do not try to memorize formulas immediately. First understand this full picture:
+
+    Historical Examples ---> Learn a Pattern ---> Test the Pattern ---> Predict
+
+LEGEND:
+
+    [INPUT]       Information supplied to a step
+    [ACTION]      Work performed during a step
+    [OUTPUT]      Result produced by a step
+    [DECISION]    Choice made from the result
+    [CRITICAL]    A mistake here can invalidate the entire project
+
+IMPORTANT UNITS:
+
+    House area : square feet (sq ft)
+    Sale price : Indian rupees in lakh
+    1 lakh     : Rs 100,000
+
+To make hand calculations easy, the dataset also contains:
+
+    Area Units = House Area / 100
+
+Example:
+
+    1,400 sq ft = 14 units of 100 sq ft
+
+========================================================================================
+TABLE OF CONTENTS
+========================================================================================
+
+1.  The Big Picture
+2.  The Real-World Problem
+3.  Understanding the Dataset
+4.  Essential Regression Vocabulary
+5.  The Complete Workflow
+6.  Step 1 — Frame the Problem
+7.  Step 2 — Collect and Understand the Data
+8.  Step 3 — Inspect and Clean the Data
+9.  Step 4 — Explore the Relationship
+10. Step 5 — Split Training and Test Data
+11. Step 6 — Create a Baseline
+12. Step 7 — Train the Regression Model Manually
+13. Step 8 — Make Training Predictions
+14. Step 9 — Evaluate on Unseen Test Data
+15. Step 10 — Use the Model for a New Prediction
+16. What the Model Learned — and Did Not Learn
+17. Improving the Model
+18. Common Beginner Mistakes
+19. Complete Workflow Recap
+20. Readiness Checklist
+21. Manual Practice Exercises
+22. Answer Key
+
+========================================================================================
+1. THE BIG PICTURE
+========================================================================================
+
+WHAT ARE WE TRYING TO ACHIEVE?
+------------------------------
+
+We want a repeatable method for estimating a house price before its actual sale.
+
+    Known house areas + known sale prices
+                       |
+                       v
+              +------------------+
+              | LEARNING PROCESS |
+              +---------+--------+
+                        |
+                        v
+              Price = Intercept + Slope x Area
+                        |
+                        v
+           New house area ---> Estimated price
+
+WHAT IS REGRESSION?
+-------------------
+
+Regression is supervised learning used to predict a NUMERICAL value.
+
+    Input                    Numerical Output
+    ------------------------------------------------
+    House area       --->    Sale price
+    Years experience --->    Salary
+    Temperature      --->    Electricity demand
+    Distance         --->    Delivery time
+
+Our output is a number (price), so this is a REGRESSION problem.
+
+FUNCTIONAL VIEW OF MACHINE LEARNING
+-----------------------------------
+
+TRAINING:
+
+    Examples with answers ---> Learning algorithm ---> Model parameters
+
+INFERENCE / PREDICTION:
+
+    New example ---> Trained model parameters ---> Predicted answer
+
+EVALUATION:
+
+    Predicted answer + actual answer ---> Error measurement ---> Trust decision
+
+THE COMPLETE LOOP:
+
+    +---------+   +---------+   +-------+   +-------+   +----------+
+    | DEFINE  |-->| PREPARE |-->| TRAIN |-->| TEST  |-->| PREDICT  |
+    | PROBLEM |   | DATA    |   | MODEL |   | MODEL |   | NEW DATA |
+    +---------+   +---------+   +---+---+   +---+---+   +----------+
+                                      |           |
+                                      +<--Improve-+
+
+*** A model is a learned mathematical rule, not magic and not a database lookup. ***
+
+========================================================================================
+2. THE REAL-WORLD PROBLEM
+========================================================================================
+
+SCENARIO
+--------
+
+A small property consultant wants a quick first estimate of a house's sale price.
+The consultant has records of recently sold houses from one comparable locality.
+
+For this first learning exercise, we use only one input:
+
+    House Floor Area (sq ft)
+
+We predict one output:
+
+    Sale Price (lakh)
+
+PROBLEM STATEMENT
+-----------------
+
+    "For a house in this locality, estimate its sale price in lakh using
+     its floor area in square feet."
+
+INPUT AND OUTPUT
+----------------
+
+    +---------------------------+         +---------------------------+
+    | INPUT FEATURE (X)         |         | TARGET / LABEL (y)        |
+    | House Area in sq ft       | ------> | Sale Price in lakh        |
+    +---------------------------+         +---------------------------+
+
+WHY THIS IS A GOOD FIRST EXAMPLE
+--------------------------------
+
+  - area and price are familiar real-world quantities;
+  - the output is clearly numerical;
+  - the relationship can be drawn as a line;
+  - predictions and errors are easy to calculate manually;
+  - the same workflow later applies to larger ML problems.
+
+BUSINESS USE
+------------
+
+The estimate could support:
+
+  - an initial conversation with a seller;
+  - a quick range check on a listing;
+  - identifying prices that require further investigation.
+
+It should NOT replace a professional valuation because real prices also depend on
+location, condition, age, parking, amenities, legal status, market timing, etc.
+
+SUCCESS CRITERION FOR THIS EXERCISE
+-----------------------------------
+
+Our learned model should:
+
+  1. outperform a simple baseline;
+  2. make small errors on houses it did not learn from;
+  3. show no obvious pattern in its errors;
+  4. remain explainable in plain language.
+
+========================================================================================
+3. UNDERSTANDING THE DATASET
+========================================================================================
+
+FILE: Regression_Dataset.csv
+
+The dataset is fictional and designed for learning. It contains 12 house sales.
+
+DATA DICTIONARY
+---------------
+
++------------------------+----------------+---------------------------------------------+
+| Column                 | Role           | Meaning                                     |
++------------------------+----------------+---------------------------------------------+
+| House_ID               | Identifier     | Unique name for each house                  |
+| House_Area_Sq_Ft       | Input feature  | Floor area measured in square feet          |
+| Area_Units_100_Sq_Ft   | Helper input   | Area divided by 100 for easy arithmetic     |
+| Sale_Price_Lakh        | Target         | Actual sale price in lakh                   |
+| Dataset_Split          | Control field  | Training or Test                            |
++------------------------+----------------+---------------------------------------------+
+
+IMPORTANT:
+
+    House_Area_Sq_Ft and Area_Units_100_Sq_Ft represent the SAME information.
+    The helper column is included only to make manual arithmetic shorter.
+
+THE COMPLETE DATASET
+--------------------
+
++----------+----------------+------------------+------------------+-----------+
+| House ID | Area (sq ft)   | Area Units (x)   | Price (lakh) (y) | Split     |
++----------+----------------+------------------+------------------+-----------+
+| H01      |            600 |                6 |               41 | Training  |
+| H02      |            800 |                8 |               48 | Training  |
+| H03      |          1,000 |               10 |               61 | Training  |
+| H04      |          1,200 |               12 |               69 | Training  |
+| H05      |          1,400 |               14 |               82 | Training  |
+| H06      |          1,600 |               16 |               89 | Training  |
+| H07      |          1,800 |               18 |              101 | Training  |
+| H08      |          2,000 |               20 |              109 | Training  |
+| H09      |          1,100 |               11 |               64 | Test      |
+| H10      |          1,500 |               15 |               86 | Test      |
+| H11      |          1,700 |               17 |               94 | Test      |
+| H12      |          2,100 |               21 |              116 | Test      |
++----------+----------------+------------------+------------------+-----------+
+
+ONE ROW REPRESENTS
+------------------
+
+    One completed house sale
+
+For example:
+
+    H05 ---> Area = 1,400 sq ft ---> Actual Sale Price = Rs 82 lakh
+
+DATA SHAPE
+----------
+
+    12 rows = 12 observations / samples / examples
+     1 true input feature = House Area
+     1 target = Sale Price
+     8 training observations
+     4 test observations
+
+WHY IS HOUSE_ID NOT AN INPUT FEATURE?
+-------------------------------------
+
+H01, H02, etc. only identify records. The code assigned to a house does not cause
+or explain its price. Treating an arbitrary ID as a numerical input can create a
+meaningless pattern.
+
+========================================================================================
+4. ESSENTIAL REGRESSION VOCABULARY
+========================================================================================
+
+FEATURE / INPUT / PREDICTOR (X)
+-------------------------------
+
+Information given to the model so it can make a prediction.
+
+    X = Area Units (house area divided by 100)
+
+TARGET / LABEL / OUTPUT (y)
+---------------------------
+
+The actual value we want the model to learn and predict.
+
+    y = Sale Price in lakh
+
+OBSERVATION / SAMPLE / ROW
+--------------------------
+
+One example in the dataset.
+
+    H03: x = 10, y = 61
+
+MODEL
+-----
+
+A mathematical rule learned from training examples.
+
+    Predicted Price = Intercept + Slope x Area Units
+
+PARAMETERS
+----------
+
+Numbers learned during training.
+
+    Slope     = how much price changes when area increases
+    Intercept = model's starting point when x = 0
+
+PREDICTION
+----------
+
+The model's estimated target value. Written as y-hat:
+
+    y-hat = predicted price
+
+ACTUAL VALUE
+------------
+
+The observed answer in historical data:
+
+    y = actual sale price
+
+RESIDUAL / ERROR
+----------------
+
+Difference between actual and predicted value:
+
+    Residual = Actual - Predicted
+
+    Positive residual ---> model predicted too LOW
+    Negative residual ---> model predicted too HIGH
+
+TRAINING
+--------
+
+The process that uses known examples to learn model parameters.
+
+TESTING
+-------
+
+The process that checks the already-trained model on unseen examples.
+
+GENERALIZATION
+--------------
+
+The ability to make useful predictions on new data, not merely remember training
+examples.
+
+========================================================================================
+5. THE COMPLETE WORKFLOW
+========================================================================================
+
+THE WORKFLOW AT A GLANCE
+------------------------
+
+ +---------+   +---------+   +---------+   +---------+   +----------+
+ | 1 FRAME |-->|2 COLLECT|-->|3 INSPECT|-->|4 EXPLORE|-->| 5 SPLIT  |
+ | PROBLEM |   | DATA    |   | & CLEAN |   | PATTERN |   | DATA     |
+ +---------+   +---------+   +---------+   +---------+   +----+-----+
+                                                                  |
+                                                                  v
+ +---------+   +---------+   +---------+   +---------+   +----------+
+ |10 USE   |<--|9 DECIDE |<--|8 TEST   |<--|7 TRAIN  |<--|6 BASELINE|
+ | MODEL   |   | & IMPROVE|  | MODEL   |   | MODEL   |   |          |
+ +---------+   +---------+   +---------+   +---------+   +----------+
+
+INPUTS AND OUTPUTS OF EACH STAGE
+--------------------------------
+
++-------+--------------------------+---------------------------+
+| Stage | Input                    | Output                    |
++-------+--------------------------+---------------------------+
+| Frame | Business question        | Clear prediction problem  |
+| Data  | Historical records       | Dataset + definitions     |
+| Clean | Raw dataset              | Trustworthy observations  |
+| Explore| Clean training data     | Relationship hypothesis   |
+| Split | All examples             | Training and test groups  |
+| Baseline| Training targets       | Minimum performance       |
+| Train | Training X and y         | Slope and intercept       |
+| Test  | Unseen X and y           | Error metrics             |
+| Decide| Metrics + context        | Accept, improve, or stop  |
+| Use   | New X                    | Predicted y               |
++-------+--------------------------+---------------------------+
+
+========================================================================================
+6. STEP 1 — FRAME THE PROBLEM
+========================================================================================
+
+[INPUT]
+-------
+
+The consultant wants a quick preliminary price estimate.
+
+[ACTION]
+--------
+
+Convert the vague request into a precise prediction question.
+
+VAGUE:
+
+    "Use AI to understand house prices."
+
+PRECISE:
+
+    "Using recent completed sales from one comparable locality, predict a
+     house's sale price in lakh from its floor area in square feet."
+
+FIVE QUESTIONS TO ANSWER
+------------------------
+
+1. WHAT IS ONE ROW?
+   One completed house sale.
+
+2. WHAT IS THE INPUT?
+   House floor area known before valuation.
+
+3. WHAT IS THE TARGET?
+   Final completed sale price.
+
+4. WHEN IS THE PREDICTION MADE?
+   Before the new house is sold.
+
+5. HOW WILL SUCCESS BE MEASURED?
+   Compare predictions with unseen actual sale prices using error metrics.
+
+[OUTPUT]
+--------
+
+    Task Type : Regression
+    Feature   : House Area
+    Target    : Sale Price
+    Unit      : Lakh
+    Main Metric: MAE, supported by RMSE and R-squared
+
+[DECISION]
+----------
+
+Proceed because both the input and target are clear and historical labeled data
+is available.
+
+*** If the target or prediction time is unclear, do not start modeling. ***
+
+========================================================================================
+7. STEP 2 — COLLECT AND UNDERSTAND THE DATA
+========================================================================================
+
+[INPUT]
+-------
+
+Recent completed-sale records from the same comparable locality.
+
+[ACTION]
+--------
+
+For every column, record:
+
+  - what it means;
+  - unit of measurement;
+  - source;
+  - collection date;
+  - whether it is available at prediction time;
+  - whether its use is permitted.
+
+DATA LINEAGE
+------------
+
+    Completed Sale Records
+              |
+              v
+    Verify Area and Final Price
+              |
+              v
+    Standardize Units and Definitions
+              |
+              v
+    Regression_Dataset.csv
+
+QUESTIONS TO ASK
+----------------
+
+  - Are all prices completed sale prices, not asking prices?
+  - Are all areas measured the same way?
+  - Are houses from comparable locations and time periods?
+  - Are records duplicated?
+  - Are we authorized to use the data?
+
+WHY THESE QUESTIONS MATTER
+--------------------------
+
+If half the records use built-up area and the other half use carpet area, the
+same numerical value no longer means the same thing. A model will learn from the
+inconsistency without knowing it is wrong.
+
+[OUTPUT]
+--------
+
+A documented dataset in which every row and column has a clear meaning.
+
+========================================================================================
+8. STEP 3 — INSPECT AND CLEAN THE DATA
+========================================================================================
+
+[INPUT]
+-------
+
+The 12-row raw dataset.
+
+[ACTION]
+--------
+
+Perform a data-quality inspection BEFORE calculating a regression line.
+
+DATA-QUALITY CHECKLIST
+----------------------
+
++----------------------+-----------------------------------------+------------------+
+| Check                | Question                                | This Dataset     |
++----------------------+-----------------------------------------+------------------+
+| Missing values       | Is area or price blank?                 | None             |
+| Duplicate IDs        | Does a House_ID appear twice?           | None             |
+| Invalid area         | Is area zero or negative?               | None             |
+| Invalid price        | Is price zero or negative?              | None             |
+| Unit consistency     | Are all areas sq ft and prices lakh?    | Yes              |
+| Extreme values       | Is any value implausibly far away?      | None obvious     |
+| Target availability  | Was sale price known only after sale?   | Yes, as expected |
++----------------------+-----------------------------------------+------------------+
+
+VISUAL RANGE CHECK
+------------------
+
+Area:
+
+    600 ---------------------------------------------------- 2,100 sq ft
+
+Price:
+
+     41 ------------------------------------------------------ 116 lakh
+
+WHAT WOULD WE DO IF A VALUE WERE MISSING?
+-----------------------------------------
+
+    Missing area?  ---> Investigate source; this is the only input feature.
+    Missing price? ---> Cannot train that row without a reliable target.
+
+For a real project, we would not automatically fill values without understanding
+why they are missing.
+
+WHAT WOULD WE DO WITH AN OUTLIER?
+--------------------------------
+
+    Suspicious value
+          |
+          +--> Data-entry error? ---> Correct from source
+          +--> Wrong unit? --------> Convert correctly
+          +--> Real luxury house? -> Keep, but consider missing features
+
+Never remove a row only because the model finds it inconvenient.
+
+[OUTPUT]
+--------
+
+All 12 observations pass the checks and remain in the dataset.
+
+========================================================================================
+9. STEP 4 — EXPLORE THE RELATIONSHIP
+========================================================================================
+
+[CRITICAL]
+----------
+
+Explore patterns using TRAINING data. Do not let test answers influence modeling
+decisions.
+
+TRAINING POINTS
+---------------
+
+ Price
+ (lakh)
+ 110 |                                      * H08
+ 100 |                                 * H07
+  90 |                            * H06
+  80 |                       * H05
+  70 |                  * H04
+  60 |             * H03
+  50 |        * H02
+  40 |   * H01
+     +---------------------------------------------------- Area
+       600  800 1000 1200 1400 1600 1800 2000            (sq ft)
+
+WHAT DO WE OBSERVE?
+-------------------
+
+  1. Direction: POSITIVE
+     Larger houses generally have higher prices.
+
+  2. Shape: APPROXIMATELY LINEAR
+     The points follow a roughly straight upward path.
+
+  3. Strength: STRONG IN THIS SMALL DATASET
+     Points remain close to an imaginary straight line.
+
+  4. Outliers: NONE OBVIOUS
+     No training point lies dramatically far from the overall pattern.
+
+RELATIONSHIP HYPOTHESIS
+-----------------------
+
+    Every additional 100 sq ft appears to add roughly Rs 5 lakh to price.
+
+WHY "ROUGHLY"?
+--------------
+
+The price increase is not identical between every pair. Real houses differ in
+ways that area alone does not capture. Regression finds the best overall trend,
+not a rule that passes perfectly through every point.
+
+[OUTPUT]
+--------
+
+The approximately straight relationship supports trying SIMPLE LINEAR REGRESSION.
+
+========================================================================================
+10. STEP 5 — SPLIT TRAINING AND TEST DATA
+========================================================================================
+
+WHY SPLIT?
+----------
+
+If we evaluate on the same rows used for learning, we only know how well the model
+fits familiar examples. We need untouched rows to simulate future predictions.
+
+THE SPLIT
+---------
+
+                         ALL 12 HOUSES
+                               |
+                  +------------+-------------+
+                  |                          |
+                  v                          v
+          +----------------+         +----------------+
+          | TRAINING SET   |         | TEST SET       |
+          | H01 to H08     |         | H09 to H12     |
+          | 8 houses       |         | 4 houses       |
+          | Learn line     |         | Final check    |
+          +----------------+         +----------------+
+
+TRAINING SET — MODEL MAY LEARN FROM THESE ANSWERS
+-------------------------------------------------
+
+    H01, H02, H03, H04, H05, H06, H07, H08
+
+TEST SET — LOCKED UNTIL TRAINING IS COMPLETE
+--------------------------------------------
+
+    H09, H10, H11, H12
+
+WHAT "LOCKED" MEANS
+--------------------
+
+  - Do not use test prices to calculate slope or intercept.
+  - Do not change the model because you saw a test answer.
+  - Use the test set only after the model is fully specified.
+
+WHY THESE PARTICULAR TEST AREAS?
+--------------------------------
+
+  - 1,100, 1,500, and 1,700 sq ft fall inside the training area range.
+  - 2,100 sq ft is slightly outside the largest training area (2,000 sq ft).
+
+This checks both interpolation and a small amount of extrapolation.
+
+INTERPOLATION VS EXTRAPOLATION
+------------------------------
+
+    Training range: 600 =================================== 2,000
+
+    1,500 sq ft ---> inside range  ---> INTERPOLATION (generally safer)
+    2,100 sq ft ---> outside range ---> EXTRAPOLATION (greater uncertainty)
+
+[OUTPUT]
+--------
+
+Eight learning examples and four untouched evaluation examples.
+
+========================================================================================
+11. STEP 6 — CREATE A BASELINE
+========================================================================================
+
+WHAT IS A BASELINE?
+-------------------
+
+A baseline is a simple prediction rule that the learned model should beat.
+
+Our baseline ignores house area and always predicts the average TRAINING price.
+
+CALCULATE THE TRAINING AVERAGE
+------------------------------
+
+Training prices:
+
+    41 + 48 + 61 + 69 + 82 + 89 + 101 + 109 = 600 lakh
+
+    Average = 600 / 8 = 75 lakh
+
+BASELINE RULE
+-------------
+
+    Predict Rs 75 lakh for EVERY house.
+
+BASELINE TEST RESULTS
+---------------------
+
++-------+--------------+---------------------+----------------+----------------+
+| House | Actual Price | Baseline Prediction | Error          | Absolute Error |
++-------+--------------+---------------------+----------------+----------------+
+| H09   |           64 |                  75 | 64 - 75 = -11  |             11 |
+| H10   |           86 |                  75 | 86 - 75 =  11  |             11 |
+| H11   |           94 |                  75 | 94 - 75 =  19  |             19 |
+| H12   |          116 |                  75 |116 - 75 =  41  |             41 |
++-------+--------------+---------------------+----------------+----------------+
+
+BASELINE MAE
+------------
+
+    MAE = (11 + 11 + 19 + 41) / 4
+        = 82 / 4
+        = 20.50 lakh
+
+INTERPRETATION
+--------------
+
+The naive baseline misses a test sale price by Rs 20.50 lakh on average.
+
+[DECISION]
+----------
+
+Our regression model must perform meaningfully better than MAE = 20.50 lakh.
+
+*** Without a baseline, "good performance" has no reference point. ***
+
+========================================================================================
+12. STEP 7 — TRAIN THE REGRESSION MODEL MANUALLY
+========================================================================================
+
+GOAL
+----
+
+Find the straight line that minimizes the total squared vertical errors between
+training points and the line.
+
+MODEL FORM
+----------
+
+    y-hat = b0 + b1*x
+
+Where:
+
+    y-hat = predicted sale price in lakh
+    x     = area in units of 100 sq ft
+    b1    = slope
+    b0    = intercept
+
+VISUAL
+------
+
+ Price
+   |                         *
+   |                     *  /  <- best-fit line
+   |                 *     /
+   |             *       /
+   |         *         /
+   |     *           /
+   +-------------------------------- Area Units
+        <---- vertical gaps = residuals ---->
+
+----------------------------------------------------------------------------------------
+12.1 CALCULATE THE MEANS
+----------------------------------------------------------------------------------------
+
+TRAINING X VALUES
+-----------------
+
+    6, 8, 10, 12, 14, 16, 18, 20
+
+    Sum of x = 104
+    Mean x   = 104 / 8 = 13
+
+TRAINING Y VALUES
+-----------------
+
+    41, 48, 61, 69, 82, 89, 101, 109
+
+    Sum of y = 600
+    Mean y   = 600 / 8 = 75
+
+THE CENTER OF THE TRAINING DATA
+-------------------------------
+
+    (mean x, mean y) = (13, 75)
+
+The least-squares regression line passes through this center point.
+
+----------------------------------------------------------------------------------------
+12.2 CALCULATE THE SLOPE
+----------------------------------------------------------------------------------------
+
+SLOPE FORMULA
+-------------
+
+              Sum[(x - mean x)(y - mean y)]
+    b1 = ------------------------------------------------
+                    Sum[(x - mean x)^2]
+
+MANUAL WORKING TABLE
+--------------------
+
++----+-----+------+-------------+-------------+----------------+-------------+
+| ID |  x  |  y   | x - 13      | y - 75      | Product        | (x - 13)^2  |
++----+-----+------+-------------+-------------+----------------+-------------+
+|H01 |   6 |   41 |          -7 |         -34 |            238 |          49 |
+|H02 |   8 |   48 |          -5 |         -27 |            135 |          25 |
+|H03 |  10 |   61 |          -3 |         -14 |             42 |           9 |
+|H04 |  12 |   69 |          -1 |          -6 |              6 |           1 |
+|H05 |  14 |   82 |           1 |           7 |              7 |           1 |
+|H06 |  16 |   89 |           3 |          14 |             42 |           9 |
+|H07 |  18 |  101 |           5 |          26 |            130 |          25 |
+|H08 |  20 |  109 |           7 |          34 |            238 |          49 |
++----+-----+------+-------------+-------------+----------------+-------------+
+|SUM | 104 |  600 |           0 |           0 |            838 |         168 |
++----+-----+------+-------------+-------------+----------------+-------------+
+
+SUBSTITUTE INTO THE FORMULA
+---------------------------
+
+    b1 = 838 / 168
+       = 4.988095...
+       = 4.99 lakh per area unit (rounded)
+
+INTERPRET THE SLOPE
+-------------------
+
+One area unit = 100 sq ft.
+
+    Every additional 100 sq ft is associated with approximately
+    Rs 4.99 lakh higher predicted price in this dataset.
+
+Equivalent approximate price per sq ft:
+
+    Rs 4.988095 lakh per 100 sq ft
+    = Rs 498,809.5 per 100 sq ft
+    = Rs 4,988.10 per sq ft
+
+----------------------------------------------------------------------------------------
+12.3 CALCULATE THE INTERCEPT
+----------------------------------------------------------------------------------------
+
+INTERCEPT FORMULA
+-----------------
+
+    b0 = mean y - b1 * mean x
+
+SUBSTITUTE VALUES
+-----------------
+
+    b0 = 75 - (4.988095 x 13)
+       = 75 - 64.845238
+       = 10.154762
+       = 10.15 lakh (rounded)
+
+INTERPRET THE INTERCEPT CAREFULLY
+--------------------------------
+
+Mathematically, the line predicts Rs 10.15 lakh when area is zero.
+
+But a zero-square-foot house is outside the meaningful data range. Therefore, the
+intercept mainly positions the line; it is not a sensible real-world house value.
+
+----------------------------------------------------------------------------------------
+12.4 THE LEARNED MODEL
+----------------------------------------------------------------------------------------
+
+EXACT MODEL (rounded to 4 decimal places):
+
+    Predicted Price (lakh) = 10.1548 + 4.9881 x Area Units
+
+EASY-TO-READ VERSION:
+
+    Predicted Price (lakh) = 10.15 + 4.99 x (Area in sq ft / 100)
+
+MODEL CARD
+----------
+
+    +-------------------------------------------------------------------+
+    | INPUT       : House Area                                           |
+    | OUTPUT      : Predicted Sale Price                                 |
+    | SLOPE       : 4.99 lakh per additional 100 sq ft                   |
+    | INTERCEPT   : 10.15 lakh                                           |
+    | TRAIN RANGE : 600 to 2,000 sq ft                                   |
+    +-------------------------------------------------------------------+
+
+[OUTPUT]
+--------
+
+The learning process transformed eight examples into two learned parameters:
+
+    Slope = 4.988095        Intercept = 10.154762
+
+THIS IS THE CORE OF TRAINING:
+
+    Many historical rows ---> Learn a few useful parameters ---> Reusable model
+
+========================================================================================
+13. STEP 8 — MAKE TRAINING PREDICTIONS
+========================================================================================
+
+WHY CHECK TRAINING PREDICTIONS?
+-------------------------------
+
+They show how closely the line fits the examples used to learn it. They do not,
+by themselves, prove that the model generalizes.
+
+ONE PREDICTION BY HAND — H05
+----------------------------
+
+H05 area = 1,400 sq ft = 14 area units
+
+    Predicted Price = 10.1548 + 4.9881 x 14
+                    = 10.1548 + 69.8334
+                    = 79.9882 lakh
+                    = 79.99 lakh
+
+Actual Price = 82.00 lakh
+
+    Residual = Actual - Predicted
+             = 82.00 - 79.99
+             = +2.01 lakh
+
+The positive residual means the model predicted Rs 2.01 lakh too low.
+
+ALL TRAINING PREDICTIONS
+------------------------
+
++------+-------+--------+-----------+-----------+------------+----------------+
+| ID   | x     | Actual | Predicted | Residual  | Abs Error  | Squared Error  |
++------+-------+--------+-----------+-----------+------------+----------------+
+| H01  |     6 |     41 |     40.08 |      0.92 |       0.92 |           0.84 |
+| H02  |     8 |     48 |     50.06 |     -2.06 |       2.06 |           4.24 |
+| H03  |    10 |     61 |     60.04 |      0.96 |       0.96 |           0.93 |
+| H04  |    12 |     69 |     70.01 |     -1.01 |       1.01 |           1.02 |
+| H05  |    14 |     82 |     79.99 |      2.01 |       2.01 |           4.05 |
+| H06  |    16 |     89 |     89.96 |     -0.96 |       0.96 |           0.93 |
+| H07  |    18 |    101 |     99.94 |      1.06 |       1.06 |           1.12 |
+| H08  |    20 |    109 |    109.92 |     -0.92 |       0.92 |           0.84 |
++------+-------+--------+-----------+-----------+------------+----------------+
+
+TRAINING METRICS
+----------------
+
+    Training MAE  = 1.24 lakh
+    Training MSE  = 1.75 lakh^2
+    Training RMSE = 1.32 lakh
+    Training R^2  = 0.9967 (99.67%)
+
+RESIDUAL PATTERN
+----------------
+
+ Residual
+   +2 |                    H05
+   +1 | H01    H03                 H07
+    0 +---------------------------------------------------- Area
+   -1 |             H04      H06          H08
+   -2 |      H02
+
+Residuals appear on both sides of zero without an obvious curve in this tiny
+training set. This supports, but does not prove, the linear assumption.
+
+[DECISION]
+----------
+
+The line fits training data closely. Now evaluate it on untouched test houses.
+
+========================================================================================
+14. STEP 9 — EVALUATE ON UNSEEN TEST DATA
+========================================================================================
+
+[CRITICAL]
+----------
+
+The slope and intercept are now frozen. Do not recalculate them using test prices.
+
+ONE TEST PREDICTION BY HAND — H10
+---------------------------------
+
+H10 area = 1,500 sq ft = 15 area units
+
+    Predicted Price = 10.1548 + 4.9881 x 15
+                    = 10.1548 + 74.8215
+                    = 84.9763 lakh
+                    = 84.98 lakh
+
+Actual Price = 86.00 lakh
+
+    Residual = 86.00 - 84.98
+             = +1.02 lakh
+
+The model predicted H10 approximately Rs 1.02 lakh too low.
+
+ALL TEST PREDICTIONS
+--------------------
+
++------+------------+-----+--------+-----------+-----------+----------+------------+
+| ID   | Area sq ft | x   | Actual | Predicted | Residual  | Abs Err  | Sq Error   |
++------+------------+-----+--------+-----------+-----------+----------+------------+
+| H09  |      1,100 |  11 |     64 |     65.02 |     -1.02 |     1.02 |       1.05 |
+| H10  |      1,500 |  15 |     86 |     84.98 |      1.02 |     1.02 |       1.05 |
+| H11  |      1,700 |  17 |     94 |     94.95 |     -0.95 |     0.95 |       0.91 |
+| H12  |      2,100 |  21 |    116 |    114.90 |      1.10 |     1.10 |       1.20 |
++------+------------+-----+--------+-----------+-----------+----------+------------+
+
+----------------------------------------------------------------------------------------
+14.1 MEAN ABSOLUTE ERROR — MAE
+----------------------------------------------------------------------------------------
+
+MAE asks:
+
+    "How far away are predictions on average, ignoring direction?"
+
+FORMULA
+-------
+
+    MAE = Sum of Absolute Errors / Number of Test Houses
+
+CALCULATION USING UNROUNDED VALUES
+----------------------------------
+
+    MAE = (1.0238 + 1.0238 + 0.9524 + 1.0952) / 4
+        = 4.0952 / 4
+        = 1.0238 lakh
+        = 1.02 lakh (rounded)
+
+INTERPRETATION
+--------------
+
+On these four unseen houses, the model misses the actual price by approximately
+Rs 1.02 lakh on average.
+
+----------------------------------------------------------------------------------------
+14.2 MEAN SQUARED ERROR — MSE
+----------------------------------------------------------------------------------------
+
+MSE squares errors before averaging, so large mistakes receive extra penalty.
+
+    MSE = (1.0482 + 1.0482 + 0.9070 + 1.1995) / 4
+        = 4.2029 / 4
+        = 1.0507 lakh^2
+        = 1.05 lakh^2 (rounded)
+
+Why lakh squared? Because each price error was squared.
+
+----------------------------------------------------------------------------------------
+14.3 ROOT MEAN SQUARED ERROR — RMSE
+----------------------------------------------------------------------------------------
+
+RMSE returns MSE to the original price unit.
+
+    RMSE = square root of 1.0507
+         = 1.0251 lakh
+         = 1.03 lakh (rounded)
+
+INTERPRETATION
+--------------
+
+Typical error with greater sensitivity to large misses is about Rs 1.03 lakh.
+
+----------------------------------------------------------------------------------------
+14.4 R-SQUARED — R^2
+----------------------------------------------------------------------------------------
+
+R^2 compares the model with predicting the test-set average for every test row.
+
+    R^2 = 1 - (Sum of Model Squared Errors / Total Variation in Actual Prices)
+
+For this test set:
+
+    Sum of Model Squared Errors = 4.2029
+    Total Variation             = 1,384
+
+    R^2 = 1 - (4.2029 / 1,384)
+        = 0.99696
+        = 99.70% (rounded)
+
+INTERPRETATION
+--------------
+
+Within this small, deliberately clean test set, the line explains about 99.70%
+of the variation in test prices relative to a constant-mean comparison.
+
+CAUTION
+-------
+
+A very high R^2 does NOT prove that:
+
+  - area causes price by itself;
+  - the model works in another city;
+  - the dataset contains every important factor;
+  - future market behavior will remain identical;
+  - the model is ready for an important financial decision.
+
+----------------------------------------------------------------------------------------
+14.5 COMPARE WITH THE BASELINE
+----------------------------------------------------------------------------------------
+
++----------------------+----------------------+----------------------+
+| Measure              | Mean Baseline        | Regression Model     |
++----------------------+----------------------+----------------------+
+| Test MAE             | 20.50 lakh           | 1.02 lakh            |
+| Test MSE             | 571.00 lakh^2        | 1.05 lakh^2          |
+| Test RMSE            | 23.90 lakh           | 1.03 lakh            |
++----------------------+----------------------+----------------------+
+
+MAE IMPROVEMENT
+---------------
+
+    Error reduction = (20.50 - 1.02) / 20.50 x 100
+                    = approximately 95.0%
+
+VISUAL COMPARISON
+-----------------
+
+Baseline MAE   : ####################  20.50 lakh
+Regression MAE : #                      1.02 lakh
+
+[DECISION]
+----------
+
+For this educational dataset, regression clearly beats the baseline and performs
+similarly on training and test rows.
+
+    Training MAE = 1.24 lakh
+    Test MAE     = 1.02 lakh
+
+There is no large train-test error gap. No obvious overfitting appears here.
+
+REAL-WORLD DECISION
+-------------------
+
+With only 12 fictional rows, the correct real-world decision would be:
+
+    "Promising demonstration — collect substantially more representative data
+     and include important price factors before operational use."
+
+========================================================================================
+15. STEP 10 — USE THE MODEL FOR A NEW PREDICTION
+========================================================================================
+
+NEW HOUSE
+---------
+
+    Area = 1,300 sq ft
+
+STEP 1 — CONVERT TO AREA UNITS
+------------------------------
+
+    x = 1,300 / 100 = 13
+
+STEP 2 — APPLY THE LEARNED EQUATION
+-----------------------------------
+
+    Predicted Price = 10.1548 + 4.9881 x 13
+                    = 10.1548 + 64.8453
+                    = 75.0001 lakh
+                    = approximately Rs 75.00 lakh
+
+PREDICTION FLOW
+---------------
+
+    +------------------+      +-------------------------------+      +----------+
+    | New Area         |      | Learned Model                 |      | Estimate |
+    | 1,300 sq ft      | ---> | 10.1548 + 4.9881 x 13        | ---> | 75 lakh  |
+    +------------------+      +-------------------------------+      +----------+
+
+WHAT HAPPENS DURING PREDICTION?
+-------------------------------
+
+The model does NOT retrain. It simply uses the already-learned slope and intercept
+with the new input.
+
+    TRAINING happens occasionally ---> learn parameters
+    PREDICTION happens repeatedly  ---> reuse parameters
+
+HOW SHOULD THE RESULT BE COMMUNICATED?
+--------------------------------------
+
+Good communication:
+
+    "Based only on area and sales represented by this dataset, the preliminary
+     estimate is approximately Rs 75 lakh. Other property factors are not included."
+
+Poor communication:
+
+    "The house is definitely worth exactly Rs 75 lakh."
+
+========================================================================================
+16. WHAT THE MODEL LEARNED — AND DID NOT LEARN
+========================================================================================
+
+WHAT IT LEARNED
+---------------
+
+From the eight training rows, the model learned:
+
+    1. A positive relationship between area and price.
+    2. Approximate increase: Rs 4.99 lakh per additional 100 sq ft.
+    3. The straight line that minimizes squared training residuals.
+
+WHAT IT DID NOT LEARN
+---------------------
+
+The dataset contains no information about:
+
+  - neighborhood differences;
+  - construction age or condition;
+  - bedrooms and bathrooms;
+  - floor level, view, parking, amenities;
+  - distance to schools or transport;
+  - legal status;
+  - sale date and changing market conditions.
+
+MODEL VIEW OF THE WORLD
+-----------------------
+
+    Real House
+       |
+       +--> Area ------------------------> Model can see this
+       +--> Location --------------------> Model is blind to this
+       +--> Condition -------------------> Model is blind to this
+       +--> Amenities -------------------> Model is blind to this
+       +--> Market timing ---------------> Model is blind to this
+
+*** A model cannot learn information that the dataset does not provide. ***
+
+CORRELATION IS NOT CAUSATION
+----------------------------
+
+Larger houses in this dataset sold for higher prices, but area is not necessarily
+the only cause. Larger houses may also be newer or in more valuable locations.
+
+WHERE SHOULD THIS MODEL BE USED?
+--------------------------------
+
+Reasonable:
+  - houses similar to training examples;
+  - same locality and comparable market period;
+  - preliminary educational estimate.
+
+Unsafe:
+  - a different city without validation;
+  - luxury villas far outside the training range;
+  - final loan approval or legal valuation;
+  - exact price claims without uncertainty.
+
+========================================================================================
+17. IMPROVING THE MODEL
+========================================================================================
+
+IMPROVEMENT IS A LOOP, NOT A ONE-TIME ACTION
+--------------------------------------------
+
+    Evaluate Errors
+           |
+           v
+    Understand Failure Cause
+           |
+           v
+    Improve Data / Features / Assumptions
+           |
+           v
+    Retrain on TRAINING data
+           |
+           v
+    Compare on VALIDATION data
+           |
+           +----------------------> Repeat if useful
+
+IMPROVEMENT PRIORITY
+--------------------
+
+1. COLLECT MORE REPRESENTATIVE DATA
+   More areas, locations, conditions, and market periods.
+
+2. ADD IMPORTANT FEATURES
+   Bedrooms, age, location, parking, condition, sale date.
+
+3. IMPROVE DATA QUALITY
+   Consistent area definitions, verified prices, duplicate control.
+
+4. CHECK ERROR GROUPS
+   Does the model consistently underprice large or older houses?
+
+5. REVISIT THE RELATIONSHIP
+   If residuals form a curve, a straight line may be too simple.
+
+FROM ONE FEATURE TO MULTIPLE FEATURES
+-------------------------------------
+
+Current simple model:
+
+    Price = b0 + b1*Area
+
+Possible later model:
+
+    Price = b0 + b1*Area + b2*Age + b3*Bedrooms + b4*LocationScore + ...
+
+This is still regression because the target remains a numerical price.
+
+WHEN WOULD WE REJECT THE MODEL?
+-------------------------------
+
+  - it fails to beat the baseline;
+  - test errors are unacceptably large;
+  - errors are systematically harmful for a subgroup;
+  - input definitions are inconsistent;
+  - production houses differ greatly from training houses;
+  - the business cannot act safely on the output.
+
+========================================================================================
+18. COMMON BEGINNER MISTAKES
+========================================================================================
+
+MISTAKE 1 — STARTING WITH AN ALGORITHM INSTEAD OF A PROBLEM
+-----------------------------------------------------------
+
+    Wrong: "I want to use Linear Regression. Find a problem."
+    Right: "I need to predict a number. Is a linear relationship reasonable?"
+
+MISTAKE 2 — USING TEST DATA DURING TRAINING
+-------------------------------------------
+
+    Wrong: Train + adjust repeatedly after seeing test results
+    Right: Freeze model, then use test once for final evaluation
+
+MISTAKE 3 — EVALUATING ONLY TRAINING PERFORMANCE
+------------------------------------------------
+
+    Training fit measures familiarity.
+    Test performance measures generalization.
+
+MISTAKE 4 — SKIPPING THE BASELINE
+---------------------------------
+
+Without a baseline, you cannot tell whether the model adds value.
+
+MISTAKE 5 — THINKING THE LINE MUST PASS THROUGH EVERY POINT
+-----------------------------------------------------------
+
+Regression balances errors across all training points. Real observations contain
+variation and noise.
+
+MISTAKE 6 — INTERPRETING R^2 AS ACCURACY
+----------------------------------------
+
+R^2 describes explained variation relative to a mean comparison. It is not the
+percentage of predictions that are "correct."
+
+MISTAKE 7 — TRUSTING HIGH R^2 WITHOUT CONTEXT
+---------------------------------------------
+
+High R^2 can coexist with leakage, biased sampling, wrong units, or unsafe use.
+
+MISTAKE 8 — EXTRAPOLATING TOO FAR
+---------------------------------
+
+ Training range
+ 600 =============================== 2,000 sq ft
+
+ Predict 1,500 ---> interpolation; supported by nearby examples
+ Predict 8,000 ---> extreme extrapolation; relationship may not continue
+
+MISTAKE 9 — INCLUDING IDENTIFIERS AS REAL FEATURES
+--------------------------------------------------
+
+House_ID labels rows; it does not explain price.
+
+MISTAKE 10 — CONFUSING PREDICTION WITH CERTAINTY
+------------------------------------------------
+
+A model produces an estimate based on limited inputs and learned patterns.
+
+========================================================================================
+19. COMPLETE WORKFLOW RECAP
+========================================================================================
+
+FULL FUNCTIONAL PICTURE
+-----------------------
+
+ +----------------------------------------------------------------------------+
+ | 1. BUSINESS QUESTION                                                       |
+ |    Estimate sale price from house area                                     |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 2. DATA                                                                    |
+ |    Historical houses with area (X) and actual price (y)                    |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 3. QUALITY                                                                 |
+ |    Check meaning, units, missing values, duplicates, outliers              |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 4. SPLIT                                                                   |
+ |    Training: learn parameters       Test: simulate unseen houses           |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 5. BASELINE                                                                |
+ |    Always predict training mean = Rs 75 lakh                               |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 6. TRAIN                                                                   |
+ |    Learn slope = 4.9881 and intercept = 10.1548                            |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 7. MODEL                                                                   |
+ |    Price = 10.1548 + 4.9881 x Area Units                                  |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 8. TEST                                                                    |
+ |    Test MAE = 1.02 lakh; Regression beats baseline MAE = 20.50 lakh        |
+ +--------------------------------------+-------------------------------------+
+                                        |
+                                        v
+ +----------------------------------------------------------------------------+
+ | 9. USE WITH LIMITS                                                         |
+ |    New 1,300 sq ft house -> estimated price approximately Rs 75 lakh       |
+ +----------------------------------------------------------------------------+
+
+ONE-SENTENCE SUMMARY OF EACH STAGE
+----------------------------------
+
+    Frame    : Decide exactly what number to predict and why.
+    Collect  : Obtain historical inputs paired with correct answers.
+    Clean    : Make meanings, units, and records trustworthy.
+    Explore  : Check whether the proposed relationship is plausible.
+    Split    : Protect unseen examples for honest evaluation.
+    Baseline : Establish the minimum useful performance.
+    Train    : Learn parameters from training examples only.
+    Predict  : Apply learned parameters to inputs.
+    Evaluate : Quantify errors on unseen answers.
+    Decide   : Accept, improve, restrict, or reject the model.
+
+WHAT CHANGES WHEN WE START CODING?
+----------------------------------
+
+The workflow does NOT change.
+
+Manual learning today:                 Coded implementation later:
+
+  inspect table                           inspect table with tools
+  calculate slope/intercept               library learns parameters
+  fill prediction table                   model produces predictions
+  calculate MAE/RMSE                      metric functions calculate them
+
+The computer makes calculations faster. It does not replace the decisions.
+
+========================================================================================
+20. READINESS CHECKLIST
+========================================================================================
+
+Mark YES only if you can explain the item without referring to the answer.
+
+PROBLEM AND DATA
+----------------
+
+[ ] I can explain why this is a regression problem.
+[ ] I can identify the input feature and target.
+[ ] I can explain what one row represents.
+[ ] I know why House_ID is not used as a feature.
+[ ] I can explain why consistent units and definitions matter.
+
+WORKFLOW
+--------
+
+[ ] I can draw the workflow from problem framing to prediction.
+[ ] I can explain the difference between training and prediction.
+[ ] I can explain why we separate training and test data.
+[ ] I know why test answers must not influence training.
+[ ] I can explain interpolation versus extrapolation.
+
+MODEL
+-----
+
+[ ] I can explain slope in real-world language.
+[ ] I can explain the limited meaning of the intercept.
+[ ] I can use y-hat = b0 + b1*x for a manual prediction.
+[ ] I understand that slope and intercept are learned parameters.
+[ ] I understand why the line does not pass through every point.
+
+EVALUATION
+----------
+
+[ ] I can calculate and interpret a residual.
+[ ] I can calculate MAE from four errors.
+[ ] I understand why MSE emphasizes large errors.
+[ ] I understand why RMSE returns to the original unit.
+[ ] I can explain R^2 without calling it "accuracy."
+[ ] I can explain why the regression model must beat the baseline.
+[ ] I compare training and test errors when checking generalization.
+
+RESPONSIBLE USE
+---------------
+
+[ ] I can list at least four important features missing from this dataset.
+[ ] I understand that high test performance on 12 fictional rows is not deployment proof.
+[ ] I can state where this model should and should not be used.
+[ ] I communicate a prediction as an estimate, not a certainty.
+
+READINESS RESULT
+----------------
+
+    23–26 YES : READY to reproduce the workflow on paper, then begin coding it.
+    18–22 YES : MOSTLY READY; revisit unchecked sections.
+    12–17 YES : PARTIALLY READY; redo calculations and workflow diagram.
+    Below 12  : REVIEW the guide from Section 1 with the CSV open.
+
+CRITICAL GATE
+-------------
+
+Do not move to coding until you can confidently explain:
+
+    [ ] Feature versus target
+    [ ] Training versus test data
+    [ ] Slope and intercept
+    [ ] Prediction versus actual value
+    [ ] Residual, MAE, and baseline
+    [ ] Why good test performance matters
+
+========================================================================================
+21. MANUAL PRACTICE EXERCISES
+========================================================================================
+
+Do these with paper, pencil, calculator, and Regression_Dataset.csv.
+
+EXERCISE 1 — IDENTIFY ROLES
+---------------------------
+
+For H03, write:
+
+    Observation ID = ______
+    Feature X      = ______ sq ft or ______ area units
+    Target y       = ______ lakh
+    Split          = ______
+
+EXERCISE 2 — BASELINE
+---------------------
+
+The baseline predicts Rs 75 lakh.
+
+For a house actually sold at Rs 90 lakh:
+
+    Residual       = ______
+    Absolute error = ______
+    Squared error  = ______
+
+EXERCISE 3 — MANUAL MODEL PREDICTION
+------------------------------------
+
+Use:
+
+    Predicted Price = 10.1548 + 4.9881*x
+
+Predict a house of 1,900 sq ft.
+
+    Area units      = ______
+    Predicted price = ______ lakh
+
+EXERCISE 4 — RESIDUAL DIRECTION
+-------------------------------
+
+If actual price is Rs 108 lakh and predicted price is Rs 105 lakh:
+
+    Residual = ______
+
+Did the model predict too high or too low? ____________________
+
+EXERCISE 5 — MAE
+----------------
+
+Four absolute errors are 1, 2, 3, and 2 lakh.
+
+    MAE = ______ lakh
+
+EXERCISE 6 — MODEL COMPARISON
+------------------------------
+
+    Model A test MAE = 4 lakh
+    Model B test MAE = 7 lakh
+
+Which model has lower average absolute error? ______
+Is that information alone always enough for deployment? ______ Why? __________
+
+EXERCISE 7 — INTERPOLATION OR EXTRAPOLATION
+--------------------------------------------
+
+Training range is 600 to 2,000 sq ft.
+
+    Predict 1,250 sq ft = __________________
+    Predict 3,500 sq ft = __________________
+
+Which prediction should have greater uncertainty? __________________
+
+EXERCISE 8 — LIMITATIONS
+------------------------
+
+List four missing house-price factors:
+
+    1. ____________________
+    2. ____________________
+    3. ____________________
+    4. ____________________
+
+========================================================================================
+22. ANSWER KEY
+========================================================================================
+
+EXERCISE 1
+----------
+
+    Observation ID = H03
+    Feature X      = 1,000 sq ft or 10 area units
+    Target y       = 61 lakh
+    Split          = Training
+
+EXERCISE 2
+----------
+
+    Residual       = Actual - Predicted = 90 - 75 = +15 lakh
+    Absolute error = 15 lakh
+    Squared error  = 225 lakh^2
+
+EXERCISE 3
+----------
+
+    Area units = 1,900 / 100 = 19
+
+    Predicted Price = 10.1548 + 4.9881 x 19
+                    = 10.1548 + 94.7739
+                    = 104.9287 lakh
+                    = approximately Rs 104.93 lakh
+
+EXERCISE 4
+----------
+
+    Residual = 108 - 105 = +3 lakh
+
+Positive residual means the model predicted too LOW by Rs 3 lakh.
+
+EXERCISE 5
+----------
+
+    MAE = (1 + 2 + 3 + 2) / 4 = 8 / 4 = 2 lakh
+
+EXERCISE 6
+----------
+
+Model A has lower MAE. No, MAE alone is not enough. Also inspect the baseline,
+error distribution, subgroups, data quality, business costs, safety, and drift.
+
+EXERCISE 7
+----------
+
+    1,250 sq ft = interpolation
+    3,500 sq ft = extrapolation
+
+The 3,500 sq ft prediction should have greater uncertainty because it lies far
+outside the training range.
+
+EXERCISE 8
+----------
+
+Possible answers: location, property age, condition, bedrooms, bathrooms,
+parking, amenities, floor, view, legal status, and sale date.
+
+========================================================================================
+FINAL TAKEAWAY
+========================================================================================
+
+You now know the complete functional picture:
+
+    DATA WITH ANSWERS
+           |
+           v
+    LEARN SLOPE + INTERCEPT
+           |
+           v
+    TEST ON UNSEEN ANSWERS
+           |
+           v
+    COMPARE ERRORS WITH BASELINE
+           |
+           v
+    USE CAREFULLY ON SIMILAR NEW DATA
+
+The most important lesson is not the equation itself. It is the disciplined flow:
+
+    Define -> Understand Data -> Protect Test Data -> Learn -> Evaluate -> Decide
+
+Once this flow is clear manually, coding becomes an implementation of concepts you
+already understand rather than a collection of unexplained library commands.
+
+========================================================================================
+END OF REGRESSION COMPLETE GUIDE
+========================================================================================
