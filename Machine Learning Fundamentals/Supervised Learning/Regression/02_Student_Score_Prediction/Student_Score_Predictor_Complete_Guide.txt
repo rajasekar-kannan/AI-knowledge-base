@@ -1,0 +1,4140 @@
+========================================================================================
+                 STUDENT SCORE PREDICTOR — COMPLETE CONCEPTUAL GUIDE
+         Multiple Linear Regression with Manual Calculations and No Programming
+========================================================================================
+
+REAL-WORLD PROBLEM : Predict a student's exam score from multiple known factors
+MODEL               : Multiple Linear Regression
+DATASET              : Student_Score_Dataset.csv
+INPUT FEATURES       : Study Hours + Attendance + Test Preparation
+AVAILABLE BUT UNUSED : Parental Education (excluded after fairness review)
+LEARNING STYLE       : Functional intuition -> transformations -> mathematics
+PROGRAMMING REQUIRED : NONE
+
+========================================================================================
+HOW TO USE THIS GUIDE
+========================================================================================
+
+Keep Student_Score_Dataset.csv open beside this guide. Read from top to bottom.
+The steps deliberately follow the same learning structure as the earlier projects.
+
+At every stage, answer these four questions:
+
+    1. WHAT are we doing?
+    2. WHY are we doing it?
+    3. HOW does it apply to this dataset?
+    4. WHAT decision follows from the result?
+
+For every formula, this guide explains:
+
+    PURPOSE       Why the formula is needed
+    COMPONENTS    What every symbol means
+    APPLICATION   How the values come from our student dataset
+    INTERPRETATION What the calculated result tells us
+
+Do not memorize the formulas first. Begin with the functional picture:
+
+    Student Information
+           |
+           v
+    Convert each input into a model-friendly number
+           |
+           v
+    Calculate one contribution from each feature
+           |
+           v
+    Add contributions to a base score
+           |
+           v
+    Predicted Score
+           |
+           v
+    Compare with Actual Score -> Measure Error -> Improve
+
+LEGEND:
+
+    [INPUT]       Information entering a stage
+    [ACTION]      Work performed during a stage
+    [OUTPUT]      Result produced by the stage
+    [DECISION]    Choice made from the result
+    [FORMULA]     Mathematical rule, explained before it is used
+    [CRITICAL]    A mistake here can invalidate the project
+    [FAIRNESS]    A people-impact or responsible-use consideration
+
+IMPORTANT UNITS:
+
+    Hours Studied       : average hours studied per day before the exam
+    Attendance Percent  : percentage of scheduled classes attended
+    Test Preparation    : whether the student completed the preparation program
+    Actual Exam Score   : points out of 100
+
+IMPORTANT LIMITATION:
+
+This dataset is fictional, tiny, and deliberately balanced so that every
+calculation can be performed by hand. Its metrics demonstrate the workflow; they
+do NOT prove that the model would perform this well in a real school.
+
+========================================================================================
+TABLE OF CONTENTS
+========================================================================================
+
+1.  The Big Picture
+2.  The Real-World Problem
+3.  Understanding the Dataset
+4.  Regression Functionally — Before Mathematics
+5.  Essential Multiple-Regression Vocabulary
+6.  The Complete Workflow
+7.  Step 1 — Frame the Prediction Problem
+8.  Step 2 — Collect and Understand the Data
+9.  Step 3 — Select Features Responsibly
+10. Step 4 — Inspect and Clean the Data
+11. Step 5 — Transform Inputs into Model Features
+12. Step 6 — Explore Relationships
+13. Step 7 — Split Training and Test Data
+14. Step 8 — Create a Baseline
+15. Step 9 — Train Multiple Linear Regression Manually
+16. Step 10 — Make and Inspect Training Predictions
+17. Step 11 — Evaluate on Unseen Test Students
+18. Step 12 — Make a New Prediction
+19. Understanding Feature Contributions
+20. Regression Assumptions and Diagnostics
+21. What the Model Learned — and Did Not Learn
+22. Improving the Model
+23. Simple Evaluation Report
+24. Common Beginner Mistakes
+25. Complete Workflow Recap
+26. Readiness Checklist
+27. Manual Practice Exercises
+28. Answer Key
+
+========================================================================================
+1. THE BIG PICTURE
+========================================================================================
+
+WHAT ARE WE TRYING TO ACHIEVE?
+------------------------------
+
+We want a repeatable method that uses information available before an exam to
+estimate a student's final exam score.
+
+    Historical students with known inputs and scores
+                         |
+                         v
+               +-------------------+
+               | LEARNING PROCESS  |
+               | Find coefficients |
+               +---------+---------+
+                         |
+                         v
+        Base score + feature contributions = prediction
+                         |
+                         v
+            New student ---> Estimated exam score
+
+WHY IS THIS A REGRESSION PROBLEM?
+---------------------------------
+
+The target is a numerical value:
+
+    49, 61, 81, 91, ... points out of 100
+
+Regression predicts a quantity on a numerical scale.
+
+    Problem                              Appropriate task
+    ----------------------------------------------------------------
+    Predict an exam score of 78.5        REGRESSION
+    Predict Pass or Fail                 CLASSIFICATION
+    Group students by learning pattern   CLUSTERING
+
+We are predicting the score itself, not a category. Therefore, this project uses
+REGRESSION.
+
+WHAT MAKES THIS PROJECT DIFFERENT FROM SIMPLE LINEAR REGRESSION?
+---------------------------------------------------------------
+
+Simple regression uses one feature:
+
+    House Area --------------------------------> House Price
+
+This project uses several features together:
+
+    Hours Studied --------+
+                           |
+    Attendance -----------+----> Predicted Exam Score
+                           |
+    Test Preparation -----+
+
+This is called MULTIPLE LINEAR REGRESSION.
+
+FUNCTIONAL VIEW OF THE MODEL
+----------------------------
+
+Imagine three transparent contribution cards:
+
+    +---------------------+      +---------------------+
+    | STUDY CONTRIBUTION  |      | ATTENDANCE          |
+    | based on hours      |      | CONTRIBUTION        |
+    +----------+----------+      +----------+----------+
+               |                            |
+               +-------------+--------------+
+                             |
+    +---------------------+  |
+    | PREPARATION         |  |
+    | CONTRIBUTION        |  |
+    +----------+----------+  |
+               |             |
+               +------+------+ 
+                      |
+                      v
+              +---------------+
+              | Add Base Score|
+              +-------+-------+
+                      |
+                      v
+               Predicted Score
+
+The model does not search for an identical historical student. It learns a
+reusable numerical contribution for each feature.
+
+THE THREE MODES OF THE PROJECT
+------------------------------
+
+TRAINING:
+
+    Training inputs + known scores ---> Learn coefficients
+
+PREDICTION:
+
+    New inputs + learned coefficients ---> Predicted score
+
+EVALUATION:
+
+    Predicted scores + untouched actual scores ---> Error metrics
+
+THE COMPLETE LOOP
+-----------------
+
+ +---------+   +---------+   +-----------+   +---------+   +----------+
+ | DEFINE  |-->| PREPARE |-->| TRANSFORM |-->| TRAIN   |-->| TEST     |
+ | PROBLEM |   | DATA    |   | FEATURES  |   | MODEL   |   | UNSEEN   |
+ +---------+   +---------+   +-----------+   +----+----+   +----+-----+
+                                                   ^             |
+                                                   |             v
+                                              +----+-------------+----+
+                                              | Diagnose and improve |
+                                              +----------------------+
+
+*** A prediction is an estimate with uncertainty, not a judgment of a student's
+    intelligence, worth, motivation, or future potential. ***
+
+========================================================================================
+2. THE REAL-WORLD PROBLEM
+========================================================================================
+
+SCENARIO
+--------
+
+A learning-support team wants an early, low-stakes estimate of exam performance.
+The purpose is to identify where extra academic support may be useful before the
+exam. The model must never automatically punish, rank, exclude, or label a
+student.
+
+PRECISE PROBLEM STATEMENT
+-------------------------
+
+    "Using historical students, estimate a student's final exam score out of
+     100 from average daily study hours, attendance percentage, and completion
+     of a test-preparation program. Make the prediction before the final exam."
+
+INPUTS AND OUTPUT
+-----------------
+
+ +-------------------------+
+ | Hours Studied           |
+ +-------------------------+
+ | Attendance Percentage   |------> Multiple Linear Regression
+ +-------------------------+                    |
+ | Test Preparation Status |                    v
+ +-------------------------+          Predicted Exam Score
+
+TARGET
+------
+
+    Actual_Exam_Score = final exam score out of 100
+
+PREDICTION TIME
+---------------
+
+The prediction is made after the study-period inputs are recorded but BEFORE the
+final exam result is known.
+
+TIMELINE DIAGRAM
+----------------
+
+    Study period                     Final exam                  Support action
+    ----------------------------|--------------------------|------------------>
+    Hours + attendance + prep    ^ Actual score unknown     Review prediction
+                                 |
+                           PREDICTION TIME
+
+WHY PREDICTION TIME MATTERS
+---------------------------
+
+A feature is valid only if it is genuinely available when the prediction is
+made.
+
+    Valid before exam                         Leakage / invalid before exam
+    -------------------------------------------------------------------------
+    Study hours                               Final exam answer sheet
+    Attendance percentage                    Final exam score
+    Completed preparation program            Teacher's post-exam grade
+
+Using the final score as an input would let the model "predict" an answer it has
+already seen. That is TARGET LEAKAGE.
+
+INTENDED USE
+------------
+
+The prediction may support:
+
+  - offering optional tutoring;
+  - checking whether preparation resources are reaching students;
+  - starting a conversation with a student;
+  - planning learning support capacity.
+
+NOT AN ACCEPTABLE USE
+---------------------
+
+It should not be used by itself to:
+
+  - deny a student access to an exam;
+  - lower a teacher's expectation of a student;
+  - assign punishment;
+  - make admissions or scholarship decisions;
+  - claim that one feature causes the score.
+
+SUCCESS CRITERIA FOR THIS EXERCISE
+----------------------------------
+
+The model should:
+
+  1. use three valid input features together;
+  2. outperform a simple average-score baseline;
+  3. have small errors on students excluded from training;
+  4. make every contribution understandable;
+  5. expose limitations and fairness risks clearly.
+
+========================================================================================
+3. UNDERSTANDING THE DATASET
+========================================================================================
+
+FILE: Student_Score_Dataset.csv
+
+The dataset is fictional and contains 12 students. Eight rows are used for
+learning and four rows are reserved for testing.
+
+DATA DICTIONARY
+---------------
+
++------------------------+------------------+------------------------------------------+
+| Column                 | Role             | Meaning                                  |
++------------------------+------------------+------------------------------------------+
+| Student_ID             | Identifier       | Artificial unique row name               |
+| Hours_Studied          | Model input      | Average study hours per day               |
+| Attendance_Percent     | Model input      | Percent of classes attended               |
+| Test_Preparation       | Model input      | Completed prep program: Yes or No         |
+| Parental_Education     | Available/unused | Context field excluded after review       |
+| Actual_Exam_Score      | Target           | Final exam points out of 100              |
+| Dataset_Split          | Control field    | Training or Test                          |
++------------------------+------------------+------------------------------------------+
+
+THE COMPLETE DATASET
+--------------------
+
++-----+-------+------------+------+----------------+--------+----------+
+| ID  | Hours | Attendance | Prep | Parent Educ.   | Actual | Split    |
++-----+-------+------------+------+----------------+--------+----------+
+| S01 |     3 |        70% | No   | School         |     56 | Training |
+| S02 |     3 |        70% | Yes  | College        |     62 | Training |
+| S03 |     3 |        90% | No   | Postgraduate   |     62 | Training |
+| S04 |     3 |        90% | Yes  | School         |     68 | Training |
+| S05 |     7 |        70% | No   | College        |     68 | Training |
+| S06 |     7 |        70% | Yes  | Postgraduate   |     74 | Training |
+| S07 |     7 |        90% | No   | School         |     82 | Training |
+| S08 |     7 |        90% | Yes  | College        |     88 | Training |
+| S09 |     4 |        75% | No   | School         |     61 | Test     |
+| S10 |     6 |        85% | Yes  | College        |     81 | Test     |
+| S11 |     8 |        95% | Yes  | Postgraduate   |     91 | Test     |
+| S12 |     2 |        65% | No   | School         |     49 | Test     |
++-----+-------+------------+------+----------------+--------+----------+
+
+ONE ROW REPRESENTS
+------------------
+
+    One student observed for one exam period
+
+Example:
+
+    S10
+      |
+      +--> Studied 6 hours per day
+      +--> Attended 85% of classes
+      +--> Completed test preparation
+      +--> Actual final score = 81
+
+DATA SHAPE
+----------
+
+    12 rows                 = 12 observations
+     3 model input features = Hours, Attendance, Preparation
+     1 available but unused = Parental Education
+     1 target               = Actual Exam Score
+     8 training rows
+     4 test rows
+
+ROW AND COLUMN VIEW
+-------------------
+
+                         COLUMNS = ATTRIBUTES
+              Hours   Attendance   Prep   Parent Educ.   Score
+                 |         |         |          |          |
+    S01 -------- 3 -------70--------No-------School-------56
+     |
+     +---- ROW = ONE OBSERVATION / STUDENT-EXAM RECORD
+
+WHY STUDENT_ID IS NOT A FEATURE
+-------------------------------
+
+S01 and S02 are labels created only to identify rows. The number inside an ID
+does not explain performance. Treating an ID as a number can create a meaningless
+pattern.
+
+WHY DATASET_SPLIT IS NOT A FEATURE
+----------------------------------
+
+"Training" and "Test" tell us how to use the row. They are not facts about the
+student and must never contribute to the prediction.
+
+WHY PARENTAL EDUCATION IS PRESENT BUT NOT USED
+----------------------------------------------
+
+It lets us practice an important professional decision: available data should
+not automatically become a model input. Section 9 examines its fairness,
+purpose, and proxy risks before excluding it.
+
+WHY THE TRAINING DATA LOOKS UNUSUALLY BALANCED
+----------------------------------------------
+
+The eight training rows contain every combination of:
+
+    Hours       : 3 or 7
+    Attendance  : 70% or 90%
+    Preparation : No or Yes
+
+COMBINATION MAP
+---------------
+
+                          Attendance
+                   70%                     90%
+              +-------------+         +-------------+
+Hours = 3     | No | Yes    |         | No | Yes    |
+              |S01 | S02    |         |S03 | S04    |
+              +-------------+         +-------------+
+
+              +-------------+         +-------------+
+Hours = 7     | No | Yes    |         | No | Yes    |
+              |S05 | S06    |         |S07 | S08    |
+              +-------------+         +-------------+
+
+This balanced design is artificial but valuable for learning. It lets us isolate
+each feature's contribution by hand. Real observational data will rarely be so
+clean or balanced.
+
+========================================================================================
+4. REGRESSION FUNCTIONALLY — BEFORE MATHEMATICS
+========================================================================================
+
+THE QUESTION A MULTIPLE REGRESSION MODEL ASKS
+---------------------------------------------
+
+    "When the other included features are held constant, how is the predicted
+     score associated with a change in this feature?"
+
+The phrase "held constant" is central.
+
+FUNCTIONAL COMPARISON — PREPARATION EFFECT
+------------------------------------------
+
+Compare students with the same hours and attendance:
+
+    S01: 3 hours, 70%, No prep  ---> 56
+    S02: 3 hours, 70%, Yes prep ---> 62
+
+Only preparation changes. The observed score difference is 6 points.
+
+The same controlled comparison occurs elsewhere:
+
+    S03 vs S04: difference = 6
+    S05 vs S06: difference = 6
+    S07 vs S08: difference = 6
+
+The data therefore supports a preparation contribution of 6 points between No
+and Yes, while study hours and attendance stay the same.
+
+FUNCTIONAL COMPARISON — HOURS EFFECT
+------------------------------------
+
+Compare low-hour and high-hour groups while balancing the other features:
+
+    Average score with 3 hours = (56 + 62 + 62 + 68) / 4 = 62
+    Average score with 7 hours = (68 + 74 + 82 + 88) / 4 = 78
+
+Difference:
+
+    78 - 62 = 16 points for a 4-hour increase
+
+Average association per extra hour:
+
+    16 / 4 = 4 points per hour
+
+FUNCTIONAL COMPARISON — ATTENDANCE EFFECT
+-----------------------------------------
+
+    Average score at 70% = (56 + 62 + 68 + 74) / 4 = 65
+    Average score at 90% = (62 + 68 + 82 + 88) / 4 = 75
+
+Difference:
+
+    75 - 65 = 10 points for a 20-percentage-point increase
+
+Average association per percentage point:
+
+    10 / 20 = 0.5 score point
+
+WHAT THE MODEL IS FUNCTIONALLY BUILDING
+---------------------------------------
+
+    Typical/base score
+            +
+    adjustment for study hours
+            +
+    adjustment for attendance
+            +
+    adjustment for preparation
+            =
+    predicted score
+
+CONTRIBUTION PIPELINE
+---------------------
+
+      Raw student values
+      H = 6, A = 85, Prep = Yes
+                 |
+                 v
+      Compare each value with a reference
+      Hours +1 above 5, Attendance +5 above 80, Prep = Yes
+                 |
+                 v
+      Convert differences into score contributions
+      +4 from hours, +2.5 from attendance, +3 from prep coding
+                 |
+                 v
+      Add to base score 70
+                 |
+                 v
+      Predicted score = 79.5
+
+WHY DOES PREPARATION SHOW +3 HERE RATHER THAN +6?
+-------------------------------------------------
+
+We use centered coding:
+
+    No  = -1
+    Yes = +1
+
+Moving from No to Yes changes the coded value by TWO units:
+
+    +1 - (-1) = 2
+
+The coefficient is 3 points per coded unit, so the full No-to-Yes difference is:
+
+    2 x 3 = 6 points
+
+This will be explained fully before the model formula is introduced.
+
+FUNCTIONAL MEANING OF "LINEAR"
+------------------------------
+
+Linear means the model combines fixed feature contributions by addition.
+
+    Feature 1 contribution ----+
+    Feature 2 contribution ----+----> SUM ---> Prediction
+    Feature 3 contribution ----+
+
+The effect assigned to one extra study hour is constant in this basic model. The
+model does not automatically learn that an extra hour may help differently at
+low or high attendance. That would require an interaction or nonlinear feature.
+
+========================================================================================
+5. ESSENTIAL MULTIPLE-REGRESSION VOCABULARY
+========================================================================================
+
+FEATURE / INPUT / PREDICTOR
+---------------------------
+
+Information available to the model at prediction time.
+
+    Hours Studied, Attendance Percentage, Test Preparation
+
+TARGET / LABEL / OUTPUT
+-----------------------
+
+The numerical answer the model learns to predict.
+
+    Actual Exam Score
+
+OBSERVATION / SAMPLE / ROW
+--------------------------
+
+One student-exam example.
+
+    S09: Hours = 4, Attendance = 75, Prep = No, Score = 61
+
+MULTIPLE LINEAR REGRESSION
+--------------------------
+
+A regression model that predicts one numerical target using two or more input
+features whose contributions are added together.
+
+COEFFICIENT
+-----------
+
+A number learned for a feature. It describes how much the predicted target
+changes for a one-unit change in that model feature, while the other included
+features stay constant.
+
+INTERCEPT / BASE SCORE
+----------------------
+
+The prediction when all CENTERED feature values equal zero. Because we center
+the inputs around meaningful reference values, our intercept is the predicted
+score for:
+
+    5 study hours, 80% attendance, and the midpoint of effect-coded prep status
+
+PREDICTION
+----------
+
+The model's estimated score, written as y-hat:
+
+    y-hat = predicted exam score
+
+ACTUAL VALUE
+------------
+
+The observed final score:
+
+    y = actual exam score
+
+RESIDUAL / SIGNED ERROR
+-----------------------
+
+The difference between actual and predicted score:
+
+    Residual = Actual - Predicted
+
+    Positive residual ---> prediction was too LOW
+    Negative residual ---> prediction was too HIGH
+
+TRAINING
+--------
+
+Using rows with known targets to learn the intercept and feature coefficients.
+
+TESTING
+-------
+
+Applying the already-fixed model to untouched rows, then comparing with their
+actual targets.
+
+GENERALIZATION
+--------------
+
+Making useful predictions for new students rather than only fitting the eight
+training rows.
+
+MULTICOLLINEARITY
+-----------------
+
+A condition in which two or more input features carry very similar information.
+It can make individual coefficients unstable even when overall predictions are
+reasonable.
+
+Example: if study hours and homework hours were nearly identical for every
+student, the model could struggle to assign their separate contributions.
+
+INTERACTION
+-----------
+
+An interaction exists when one feature's relationship with the target depends on
+another feature.
+
+Example:
+
+    The usefulness of extra study time might differ at 60% versus 95% attendance.
+
+Our basic model does not include an interaction. Later residual analysis shows
+why this matters.
+
+========================================================================================
+6. THE COMPLETE WORKFLOW
+========================================================================================
+
+WORKFLOW AT A GLANCE
+--------------------
+
+ +---------+   +---------+   +---------+   +----------+   +---------+
+ |1 FRAME  |-->|2 COLLECT|-->|3 SELECT |-->|4 INSPECT |-->|5 TRANSFORM|
+ | PROBLEM |   | DATA    |   | FEATURES|   | & CLEAN  |   | FEATURES |
+ +---------+   +---------+   +---------+   +----------+   +----+----+
+                                                                    |
+                                                                    v
+ +---------+   +---------+   +---------+   +----------+   +---------+
+ |12 USE   |<--|11 TEST  |<--|10 CHECK |<--|9 TRAIN   |<--|6 EXPLORE|
+ | MODEL   |   | UNSEEN  |   | TRAINING|   | MODEL    |   | PATTERNS|
+ +----+----+   +---------+   +---------+   +----------+   +----+----+
+      |                                                            |
+      |             +-------------+   +-------------+              |
+      +------------>| MONITOR AND |<--|8 BASELINE   |<--7 SPLIT----+
+                    | IMPROVE     |   |             |
+                    +-------------+   +-------------+
+
+INPUTS AND OUTPUTS OF EACH STAGE
+--------------------------------
+
++-------+-----------------------------+----------------------------------+
+| Stage | Input                       | Output                           |
++-------+-----------------------------+----------------------------------+
+| Frame | Support need                | Precise regression problem       |
+| Data  | Historical student records  | Documented dataset               |
+| Select| Available columns           | Permitted prediction features    |
+| Clean | Raw records                 | Trustworthy observations         |
+| Transform| Mixed feature types      | Comparable numerical features    |
+| Explore| Training rows              | Relationship hypotheses          |
+| Split | All rows                    | Training and untouched test sets |
+| Baseline| Training scores           | Minimum useful performance       |
+| Train | Training X and y            | Intercept + coefficients         |
+| Check | Training predictions        | Fit and residual evidence        |
+| Test  | Untouched X and y           | Generalization metrics           |
+| Use   | New student's inputs        | Predicted score + limitations    |
++-------+-----------------------------+----------------------------------+
+
+LEAKAGE-SAFE INFORMATION FLOW
+-----------------------------
+
+                       ALL HISTORICAL ROWS
+                                |
+                           SPLIT FIRST
+                   +------------+-------------+
+                   |                          |
+                   v                          v
+            TRAINING ROWS                TEST ROWS
+                   |                       LOCKED
+                   v                          |
+       Learn transformations and model        |
+                   |                          |
+                   +----------+---------------+
+                              v
+                    Apply only; do not relearn
+
+========================================================================================
+7. STEP 1 — FRAME THE PREDICTION PROBLEM
+========================================================================================
+
+[INPUT]
+-------
+
+A learning-support team wants to understand possible exam performance early.
+
+[ACTION]
+--------
+
+Replace a vague AI request with a measurable prediction question.
+
+VAGUE:
+
+    "Use machine learning to understand students."
+
+PRECISE:
+
+    "Before the final exam, predict the final score out of 100 from study hours,
+     attendance, and preparation-program completion."
+
+SIX FRAMING QUESTIONS
+---------------------
+
+1. WHAT IS ONE ROW?
+   One student for one exam period.
+
+2. WHAT IS THE TARGET?
+   Final exam score out of 100.
+
+3. WHEN IS THE PREDICTION MADE?
+   After input measurement and before the final exam.
+
+4. WHICH FEATURES ARE AVAILABLE THEN?
+   Study hours, attendance, and preparation completion.
+
+5. WHO IS AFFECTED?
+   Students, teachers, families, and support staff.
+
+6. HOW WILL SUCCESS BE MEASURED?
+   Compare predictions with untouched actual scores using baseline, MAE, RMSE,
+   residuals, and R-squared, plus subgroup review in a real project.
+
+TASK CARD
+---------
+
+    Task Type       : Multiple regression
+    Unit of Analysis: Student-exam record
+    Target           : Exam score out of 100
+    Prediction Time  : Before the final exam
+    Main Metric      : MAE
+    Supporting       : RMSE, R-squared, residual inspection
+    Intended Use     : Low-stakes support planning
+    Prohibited Use   : Automatic punishment or exclusion
+
+[DECISION]
+----------
+
+Proceed conceptually because the target, timing, inputs, use, and evaluation plan
+are defined. A real school project would additionally require consent, privacy,
+governance, and a much larger representative dataset.
+
+========================================================================================
+8. STEP 2 — COLLECT AND UNDERSTAND THE DATA
+========================================================================================
+
+[INPUT]
+-------
+
+Historical learning records collected before the final exam and final scores
+recorded afterward.
+
+DATA LINEAGE
+------------
+
+    Study logs --------+
+                       |
+    Attendance system -+---> Join using authorized student key
+                       |              |
+    Prep records ------+              v
+                              Validate definitions
+                                       |
+    Final score -----------------------+
+                                       |
+                                       v
+                         Student_Score_Dataset.csv
+
+QUESTIONS FOR EACH COLUMN
+-------------------------
+
+  - What exactly does it mean?
+  - Who recorded it and how?
+  - Is the unit consistent?
+  - Is it available at prediction time?
+  - Are we authorized to use it?
+  - Could it disadvantage a group?
+  - Can the student correct an inaccurate value?
+
+MEASUREMENT RISKS
+-----------------
+
+Hours Studied
+  - may be self-reported;
+  - quantity does not measure study quality;
+  - responsibilities outside school may limit time.
+
+Attendance
+  - absence can reflect illness, disability, transport, or caregiving;
+  - recording errors may occur;
+  - attendance is not the same as engagement.
+
+Test Preparation
+  - access may be unequal;
+  - completion does not measure effort or quality;
+  - the program may itself cause selection bias.
+
+Final Score
+  - one exam is an incomplete measure of learning;
+  - grading consistency must be checked;
+  - accommodations and exam conditions matter.
+
+[OUTPUT]
+--------
+
+A data dictionary, prediction-time map, and list of measurement limitations.
+
+========================================================================================
+9. STEP 3 — SELECT FEATURES RESPONSIBLY
+========================================================================================
+
+[CRITICAL]
+----------
+
+"The column exists" is not a reason to use it.
+
+FEATURE-SELECTION DECISION FLOW
+-------------------------------
+
+                         Candidate feature
+                                |
+                  Is it known at prediction time?
+                         /              \
+                       No                Yes
+                       |                  |
+                    EXCLUDE       Is use lawful/permitted?
+                                        /       \
+                                      No         Yes
+                                      |           |
+                                   EXCLUDE   Is it relevant and reliable?
+                                                  /       \
+                                                No         Yes
+                                                |           |
+                                             EXCLUDE   Check fairness/proxy risk
+                                                            |
+                                                  INCLUDE, REDESIGN, OR EXCLUDE
+
+FEATURE REVIEW TABLE
+--------------------
+
++----------------------+-------------+----------+--------------------+----------+
+| Feature              | Pre-exam?   | Relevant | Key concern        | Decision |
++----------------------+-------------+----------+--------------------+----------+
+| Hours Studied        | Yes         | Yes      | Self-report error  | Include  |
+| Attendance Percent   | Yes         | Yes      | Context/inequality | Include* |
+| Test Preparation     | Yes         | Yes      | Unequal access     | Include* |
+| Parental Education   | Usually yes | Possible | Socioeconomic proxy| Exclude  |
+| Actual Exam Score    | No          | Target   | Target leakage     | Target   |
+| Student ID           | Yes         | No       | Arbitrary identity | Exclude  |
+| Dataset Split        | Created     | No       | Pipeline metadata  | Exclude  |
++----------------------+-------------+----------+--------------------+----------+
+
+* Included only for this conceptual exercise. A real deployment must audit
+  subgroup errors, access inequality, policy, and whether the feature supports a
+  beneficial intervention.
+
+WHY EXCLUDE PARENTAL EDUCATION?
+-------------------------------
+
+Parental education may correlate with resources and socioeconomic conditions.
+Using it can:
+
+  - reproduce historical inequality;
+  - create a proxy for protected or sensitive background;
+  - give a student little ability to change the prediction;
+  - distract from features directly connected to support.
+
+This does NOT prove that excluding it solves fairness. Other features can also be
+proxies. The point is to require purpose and evidence before use.
+
+[FAIRNESS] ASSOCIATION IS NOT CAUSATION
+---------------------------------------
+
+If students who attended preparation score higher, regression finds an
+association. It does not by itself prove that preparation caused every point of
+the difference. Students who join may differ in motivation, prior knowledge,
+time, access, or support.
+
+    Observed association
+           |
+           +--> Possible causal effect
+           +--> Self-selection
+           +--> Prior knowledge
+           +--> Resource/access difference
+           +--> Measurement error
+
+[OUTPUT]
+--------
+
+The conceptual model will use exactly three features:
+
+    Hours Studied + Attendance Percentage + Test Preparation
+
+========================================================================================
+10. STEP 4 — INSPECT AND CLEAN THE DATA
+========================================================================================
+
+[INPUT]
+-------
+
+The 12-row fictional dataset.
+
+DATA-QUALITY CHECKLIST
+----------------------
+
++----------------------+------------------------------------------+--------------+
+| Check                | Validity rule                            | This dataset |
++----------------------+------------------------------------------+--------------+
+| Missing values       | Required model fields are present        | None         |
+| Duplicate IDs        | Student_ID appears once                  | None         |
+| Hours range          | Hours are plausible and non-negative     | 2 to 8       |
+| Attendance range     | Percentage lies from 0 to 100            | 65 to 95     |
+| Preparation category | Value is exactly Yes or No               | Valid        |
+| Score range          | Score lies from 0 to 100                 | 49 to 91     |
+| Split values         | Value is Training or Test                | Valid        |
+| Units                | Same definition for every row            | Yes          |
+| Obvious outlier      | No value far outside this tiny pattern   | None obvious |
++----------------------+------------------------------------------+--------------+
+
+RANGE VISUAL
+------------
+
+    Hours      2 |=======================================| 8
+    Attendance65 |=======================================| 95
+    Score      49 |=======================================| 91
+
+MISSING-VALUE DECISION MAP
+--------------------------
+
+    Missing value
+         |
+         +--> Source error? ----------> Correct from authorized source
+         |
+         +--> Target missing? --------> Cannot use as labeled training row
+         |
+         +--> Feature truly unknown? -> Investigate pattern of missingness
+                                           |
+                                           +--> Impute within training pipeline
+                                           +--> Add missingness indicator
+                                           +--> Redesign data collection
+
+Never fill missing values simply because a formula needs a number.
+
+OUTLIER DECISION MAP
+--------------------
+
+    Unusual score or input
+           |
+           +--> Data entry error? ------> Correct from source
+           +--> Wrong unit? ------------> Convert correctly
+           +--> Duplicate? -------------> Resolve duplication
+           +--> Real unusual student? --> Keep and investigate
+
+An unusual but real observation may contain important information. Removing it
+only because it increases model error would make evaluation dishonest.
+
+WHY CLEANING MUST RESPECT THE TRAIN/TEST BOUNDARY
+-------------------------------------------------
+
+In a real workflow, statistics used for imputation, scaling, or outlier rules
+must be learned from training data and applied to test data. Looking at test
+answers during cleaning can leak information.
+
+[OUTPUT]
+--------
+
+No corrections are required for this designed dataset. All 12 rows remain.
+
+========================================================================================
+11. STEP 5 — TRANSFORM INPUTS INTO MODEL FEATURES
+========================================================================================
+
+WHY TRANSFORM AT ALL?
+---------------------
+
+The model needs numerical features. Hours and attendance are already numerical;
+preparation is a Yes/No category. We also want an intercept that represents a
+meaningful central student rather than impossible values of zero hours and zero
+attendance.
+
+TRANSFORMATION OVERVIEW
+-----------------------
+
+ +----------------------+        +------------------------------+
+ | RAW INPUT            |        | TRANSFORMED MODEL FEATURE    |
+ +----------------------+        +------------------------------+
+ | Hours Studied        |------->| x1 = (Hours - 5) / 2         |
+ | Attendance Percent   |------->| x2 = (Attendance - 80) / 10 |
+ | Prep: No / Yes       |------->| x3 = -1 / +1                 |
+ +----------------------+        +------------------------------+
+
+These transformations are chosen to make hand calculations and interpretation
+easy. They do not change the underlying ordering of hours or attendance.
+
+----------------------------------------------------------------------------------------
+11.1 TRANSFORM STUDY HOURS
+----------------------------------------------------------------------------------------
+
+[FORMULA]
+
+          Hours Studied - 5
+    x1 = -------------------
+                   2
+
+PURPOSE — WHY USE THIS FORMULA?
+-------------------------------
+
+  - subtracting 5 centers the feature on a meaningful reference;
+  - dividing by 2 expresses changes in convenient two-hour units;
+  - the training values 3 and 7 become -1 and +1;
+  - the coefficient becomes easy to calculate manually.
+
+COMPONENTS
+----------
+
+    Hours Studied = original daily study-hour value
+    5             = reference/center value
+    2             = scale: one model unit equals two hours
+    x1            = transformed study-hours feature
+
+APPLICATION
+-----------
+
+    For 3 hours: x1 = (3 - 5) / 2 = -2 / 2 = -1
+    For 5 hours: x1 = (5 - 5) / 2 =  0 / 2 =  0
+    For 7 hours: x1 = (7 - 5) / 2 =  2 / 2 = +1
+
+INTERPRETATION
+--------------
+
+    x1 = -1 ---> two hours below the reference
+    x1 =  0 ---> exactly the reference
+    x1 = +1 ---> two hours above the reference
+
+This is centered scaling, not a claim that five hours is an ideal amount.
+
+----------------------------------------------------------------------------------------
+11.2 TRANSFORM ATTENDANCE
+----------------------------------------------------------------------------------------
+
+[FORMULA]
+
+          Attendance Percent - 80
+    x2 = -------------------------
+                      10
+
+PURPOSE — WHY USE THIS FORMULA?
+-------------------------------
+
+  - 80% becomes the central reference;
+  - one model unit represents ten percentage points;
+  - training values 70% and 90% become -1 and +1;
+  - coefficients remain easy to interpret.
+
+COMPONENTS
+----------
+
+    Attendance Percent = original percentage
+    80                 = reference percentage
+    10                 = scale in percentage points
+    x2                 = transformed attendance feature
+
+APPLICATION
+-----------
+
+    70%: x2 = (70 - 80) / 10 = -1
+    80%: x2 = (80 - 80) / 10 =  0
+    90%: x2 = (90 - 80) / 10 = +1
+
+INTERPRETATION
+--------------
+
+One unit of x2 means ten ATTENDANCE PERCENTAGE POINTS, not a ten-percent relative
+increase.
+
+    From 70% to 80% = +10 percentage points
+
+----------------------------------------------------------------------------------------
+11.3 ENCODE TEST PREPARATION
+----------------------------------------------------------------------------------------
+
+Raw categories cannot enter an arithmetic formula directly. We use EFFECT CODING:
+
+    No  ---> x3 = -1
+    Yes ---> x3 = +1
+
+PURPOSE — WHY USE -1 AND +1?
+----------------------------
+
+  - the two balanced groups have mean zero;
+  - the intercept represents the midpoint of the two groups;
+  - the coefficient becomes half the Yes-versus-No difference;
+  - manual calculation becomes symmetrical.
+
+COMPONENTS
+----------
+
+    x3 = transformed preparation feature
+    -1 = did not complete preparation
+    +1 = completed preparation
+
+APPLICATION
+-----------
+
+If the learned x3 coefficient is 3:
+
+    No contribution  = 3 x (-1) = -3
+    Yes contribution = 3 x (+1) = +3
+
+Full Yes-versus-No difference:
+
+    +3 - (-3) = 6 score points
+
+THIS IS NOT ORDINAL RANKING
+---------------------------
+
+The numbers do not mean "Yes is twice No." They are a mathematical encoding of
+a two-category difference around a midpoint.
+
+----------------------------------------------------------------------------------------
+11.4 TRANSFORMED TRAINING TABLE
+----------------------------------------------------------------------------------------
+
++-----+-------+------+------------+------+-------+------+--------+
+| ID  | Hours | x1   | Attendance | x2   | Prep  | x3   | Actual |
++-----+-------+------+------------+------+-------+------+--------+
+| S01 |     3 |   -1 |        70% |   -1 | No    |   -1 |     56 |
+| S02 |     3 |   -1 |        70% |   -1 | Yes   |   +1 |     62 |
+| S03 |     3 |   -1 |        90% |   +1 | No    |   -1 |     62 |
+| S04 |     3 |   -1 |        90% |   +1 | Yes   |   +1 |     68 |
+| S05 |     7 |   +1 |        70% |   -1 | No    |   -1 |     68 |
+| S06 |     7 |   +1 |        70% |   -1 | Yes   |   +1 |     74 |
+| S07 |     7 |   +1 |        90% |   +1 | No    |   -1 |     82 |
+| S08 |     7 |   +1 |        90% |   +1 | Yes   |   +1 |     88 |
++-----+-------+------+------------+------+-------+------+--------+
+
+BALANCE CHECK
+-------------
+
+    Sum of x1 = 0
+    Sum of x2 = 0
+    Sum of x3 = 0
+
+Every pair is also balanced:
+
+    Sum of x1*x2 = 0
+    Sum of x1*x3 = 0
+    Sum of x2*x3 = 0
+
+This special property is called ORTHOGONALITY in this designed table. It means
+the three feature patterns do not overlap in the training design, allowing us to
+calculate their coefficients independently by hand.
+
+[CRITICAL]
+----------
+
+Ordinary real-world features are usually correlated. Their coefficients must be
+estimated together using numerical optimization or matrix methods. The shortcut
+used later is mathematically valid for this balanced learning dataset, not a
+general manual recipe for every dataset.
+
+[OUTPUT]
+--------
+
+Three centered, numerical model features are ready for exploration and training.
+
+========================================================================================
+12. STEP 6 — EXPLORE RELATIONSHIPS
+========================================================================================
+
+[CRITICAL]
+----------
+
+Explore model relationships using TRAINING rows. Do not use test scores to choose
+features, transformations, or coefficients.
+
+WHY EXPLORE EACH FEATURE?
+-------------------------
+
+Multiple regression assumes that an additive linear combination is a reasonable
+starting approximation. Exploration asks:
+
+  - Does each numerical feature have a direction of association?
+  - Is the pattern roughly straight rather than strongly curved?
+  - Are features redundant with one another?
+  - Are there unusual observations?
+  - Might an interaction be missing?
+
+----------------------------------------------------------------------------------------
+12.1 STUDY HOURS AND SCORE
+----------------------------------------------------------------------------------------
+
+    3-hour students: 56, 62, 62, 68 ---> mean = 62
+    7-hour students: 68, 74, 82, 88 ---> mean = 78
+
+ Average Score
+   80 |                              * 78
+   75 |
+   70 |
+   65 |        * 62
+   60 |
+      +---------------------------------------- Hours
+               3                    7
+
+The high-hours group averages 16 points more. This is a positive association in
+our balanced training data.
+
+----------------------------------------------------------------------------------------
+12.2 ATTENDANCE AND SCORE
+----------------------------------------------------------------------------------------
+
+    70% group: 56, 62, 68, 74 ---> mean = 65
+    90% group: 62, 68, 82, 88 ---> mean = 75
+
+ Average Score
+   76 |                              * 75
+   72 |
+   68 |
+   64 |        * 65
+      +---------------------------------------- Attendance
+              70%                   90%
+
+The 90% group averages 10 points more than the 70% group.
+
+----------------------------------------------------------------------------------------
+12.3 PREPARATION AND SCORE
+----------------------------------------------------------------------------------------
+
+    No group : 56, 62, 68, 82 ---> mean = 67
+    Yes group: 62, 68, 74, 88 ---> mean = 73
+
+ Average Score
+   74 |                              * 73
+   70 |
+   66 |        * 67
+      +---------------------------------------- Preparation
+               No                   Yes
+
+The preparation-completed group averages 6 points more.
+
+----------------------------------------------------------------------------------------
+12.4 FEATURE-TO-FEATURE RELATIONSHIPS
+----------------------------------------------------------------------------------------
+
+In the eight training rows:
+
+  - both hour levels appear equally at both attendance levels;
+  - both prep categories appear equally in every hours-attendance combination;
+  - no model feature predicts another model feature.
+
+BALANCED RELATIONSHIP MAP
+-------------------------
+
+    Hours x1 -------- correlation 0 -------- Attendance x2
+       |                                         |
+       |                                         |
+       +---------- correlation 0 ----------------+
+                         |
+                    Prep status x3
+
+This artificial independence is what makes the later manual coefficient
+calculation simple. Real school records could contain strong relationships; for
+example, students with greater access to preparation may also report more study
+hours.
+
+----------------------------------------------------------------------------------------
+12.5 INITIAL HYPOTHESIS
+----------------------------------------------------------------------------------------
+
+An additive multiple-linear model is a reasonable learning model because:
+
+  - all three group comparisons have understandable directions;
+  - the dataset is balanced across features;
+  - no obvious outlier dominates the tiny training set;
+  - the target is numerical.
+
+However, only two levels of hours and attendance appear in training. We cannot
+truly verify a straight-line shape from two levels. This is an important
+limitation, not a detail to hide.
+
+[OUTPUT]
+--------
+
+Proceed with multiple linear regression as a transparent first model.
+
+========================================================================================
+13. STEP 7 — SPLIT TRAINING AND TEST DATA
+========================================================================================
+
+WHY SPLIT?
+----------
+
+If we measure the model only on rows used to learn it, we measure familiarity,
+not generalization. The test set simulates future students whose actual scores
+were unavailable during training.
+
+THE DESIGNED SPLIT
+------------------
+
+                         ALL 12 STUDENTS
+                                |
+                   +------------+-------------+
+                   |                          |
+                   v                          v
+          +------------------+       +------------------+
+          | TRAINING SET     |       | TEST SET         |
+          | S01 to S08       |       | S09 to S12       |
+          | 8 students       |       | 4 students       |
+          | Learn model      |       | Final evaluation |
+          +------------------+       +------------------+
+
+TRAINING RANGE
+--------------
+
+    Hours      : 3 to 7
+    Attendance : 70% to 90%
+    Prep       : No and Yes
+
+TEST CASE PURPOSES
+------------------
+
++-----+-------+------------+------+-----------------------------------------------+
+| ID  | Hours | Attendance | Prep | What it checks                                |
++-----+-------+------------+------+-----------------------------------------------+
+| S09 |     4 |        75% | No   | Interpolation within training ranges          |
+| S10 |     6 |        85% | Yes  | Interpolation within training ranges          |
+| S11 |     8 |        95% | Yes  | Mild high-side extrapolation                  |
+| S12 |     2 |        65% | No   | Mild low-side extrapolation                   |
++-----+-------+------------+------+-----------------------------------------------+
+
+INTERPOLATION AND EXTRAPOLATION
+-------------------------------
+
+    Hours training range: 3 ============================== 7
+
+              S09=4          S10=6
+                 ^              ^
+                 | INTERPOLATION|
+
+    S12=2 <------|                                      |------> S11=8
+          EXTRAPOLATION                                  EXTRAPOLATION
+
+Interpolation uses inputs inside observed training ranges and is generally safer.
+Extrapolation extends the learned line beyond observed levels and requires more
+caution.
+
+WHY THIS SPLIT IS NOT A REAL PRODUCTION SPLIT
+---------------------------------------------
+
+The rows were manually selected to teach calculations. In real work, select a
+split based on deployment:
+
+    Future exam periods? ------------> Chronological split
+    Same student appears repeatedly? -> Group by Student_ID
+    Different schools? --------------> Hold out schools/grouped validation
+    One-time independent rows? ------> Random split may be suitable
+
+[OUTPUT]
+--------
+
+Eight rows may influence the model. Four actual scores remain untouched until
+the model is fully specified.
+
+========================================================================================
+14. STEP 8 — CREATE A BASELINE
+========================================================================================
+
+WHAT IS A BASELINE?
+-------------------
+
+A baseline is a simple rule that a useful model should beat. It prevents us from
+calling a complicated model "good" merely because its error looks small without
+a reference.
+
+BASELINE RULE
+-------------
+
+Ignore all features and predict the average TRAINING score for every student.
+
+[FORMULA]
+
+                       Sum of training scores
+    Training Mean = -------------------------------
+                     Number of training students
+
+PURPOSE — WHY USE THIS FORMULA?
+-------------------------------
+
+The mean is the constant prediction that minimizes squared error on the training
+scores. It gives regression a simple, legitimate competitor.
+
+COMPONENTS
+----------
+
+    Training scores = 56, 62, 62, 68, 68, 74, 82, 88
+    Number of rows  = 8
+
+APPLICATION
+-----------
+
+    Sum = 56 + 62 + 62 + 68 + 68 + 74 + 82 + 88 = 560
+
+    Training Mean = 560 / 8 = 70
+
+BASELINE PREDICTION
+-------------------
+
+    Predict 70 for every test student.
+
+BASELINE TEST RESULTS
+---------------------
+
++-----+--------+---------------------+----------------+----------------+
+| ID  | Actual | Baseline Prediction | Error y-y-hat  | Absolute Error |
++-----+--------+---------------------+----------------+----------------+
+| S09 |     61 |                  70 | 61 - 70 =  -9 |              9 |
+| S10 |     81 |                  70 | 81 - 70 = +11 |             11 |
+| S11 |     91 |                  70 | 91 - 70 = +21 |             21 |
+| S12 |     49 |                  70 | 49 - 70 = -21 |             21 |
++-----+--------+---------------------+----------------+----------------+
+
+BASELINE MAE
+------------
+
+    MAE = (9 + 11 + 21 + 21) / 4
+        = 62 / 4
+        = 15.50 points
+
+BASELINE MSE AND RMSE
+---------------------
+
+    MSE = (9^2 + 11^2 + 21^2 + 21^2) / 4
+        = (81 + 121 + 441 + 441) / 4
+        = 1084 / 4
+        = 271 score-points squared
+
+    RMSE = square root of 271
+         = approximately 16.46 points
+
+INTERPRETATION
+--------------
+
+The baseline misses a test score by 15.50 points on average. Large misses push
+RMSE to 16.46 points.
+
+[DECISION]
+----------
+
+The learned model should meaningfully improve on baseline MAE = 15.50 and
+baseline RMSE = 16.46.
+
+========================================================================================
+15. STEP 9 — TRAIN MULTIPLE LINEAR REGRESSION MANUALLY
+========================================================================================
+
+GOAL
+----
+
+Learn four parameters from the eight training rows:
+
+    1 intercept + 3 feature coefficients
+
+MODEL FORM — INTRODUCED AFTER THE FUNCTIONAL IDEA
+-------------------------------------------------
+
+[FORMULA]
+
+    y-hat = b0 + b1*x1 + b2*x2 + b3*x3
+
+PURPOSE — WHY USE THIS FORMULA?
+-------------------------------
+
+We need one reusable rule that combines several feature contributions into one
+numerical prediction. An additive linear formula is the simplest transparent
+way to do that.
+
+COMPONENTS
+----------
+
+    y-hat = predicted exam score
+    b0    = intercept / base score
+    b1    = coefficient for transformed study hours
+    b2    = coefficient for transformed attendance
+    b3    = coefficient for effect-coded preparation
+    x1    = (Hours - 5) / 2
+    x2    = (Attendance - 80) / 10
+    x3    = -1 for No, +1 for Yes
+
+APPLICATION SHAPE
+-----------------
+
+    Predicted Score
+        = Base
+        + Study contribution
+        + Attendance contribution
+        + Preparation contribution
+
+----------------------------------------------------------------------------------------
+15.1 WHAT DOES "BEST" MEAN DURING TRAINING?
+----------------------------------------------------------------------------------------
+
+For any proposed parameters, the model makes a prediction for every training
+row. Each vertical difference is a residual.
+
+    Actual score
+         *
+         |  residual = actual - predicted
+         |
+         o  predicted score
+
+We choose parameters that minimize the total SQUARED residuals.
+
+[FORMULA]
+
+                         n
+    SSE = Sum (y_i - y-hat_i)^2
+                        i=1
+
+Written in words:
+
+    Sum of Squared Errors
+      = add the square of every training residual
+
+PURPOSE — WHY USE SSE?
+----------------------
+
+  - positive and negative residuals cannot cancel after squaring;
+  - larger mistakes receive greater penalty;
+  - the resulting objective has a convenient solution when features contain
+    sufficient independent information;
+  - ordinary least squares is defined by minimizing this quantity.
+
+COMPONENTS
+----------
+
+    n        = number of training rows, here 8
+    y_i      = actual score for training row i
+    y-hat_i  = predicted score for row i
+    residual = y_i - y-hat_i
+
+APPLICATION
+-----------
+
+If two residuals are +2 and -2:
+
+    Without squaring: +2 + (-2) = 0   <-- falsely appears perfect
+    With squaring   : 2^2 + (-2)^2 = 4 + 4 = 8
+
+Both mistakes are counted.
+
+----------------------------------------------------------------------------------------
+15.2 WHY MANUAL TRAINING IS POSSIBLE HERE
+----------------------------------------------------------------------------------------
+
+The training features are centered and orthogonal:
+
+    each x column sums to zero;
+    each x value is -1 or +1;
+    pairwise feature products sum to zero.
+
+Consequences:
+
+  1. The intercept is the overall training-score mean.
+  2. Each feature coefficient can be isolated without adjusting for overlap.
+  3. The coefficient for a -1/+1 feature is half the difference between the two
+     feature-group means.
+
+ORTHOGONAL DESIGN FLOW
+----------------------
+
+    Balanced combinations
+           |
+           v
+    Feature columns do not overlap
+           |
+           v
+    Separate controlled group comparisons
+           |
+           v
+    Manually recover each coefficient
+
+This convenience comes from the designed dataset. In ordinary observational
+data, coefficients must be solved simultaneously.
+
+----------------------------------------------------------------------------------------
+15.3 LEARN THE INTERCEPT b0
+----------------------------------------------------------------------------------------
+
+[FORMULA]
+
+                  Sum of training y values
+    b0 = y-bar = ----------------------------
+                  Number of training rows
+
+PURPOSE — WHY USE THE MEAN HERE?
+--------------------------------
+
+Because every transformed feature has training mean zero, all average feature
+contributions cancel. The average prediction therefore equals the intercept.
+Least squares places this average prediction at the average actual target.
+
+COMPONENTS
+----------
+
+    b0    = learned base score
+    y-bar = average training score
+
+APPLICATION
+-----------
+
+    b0 = 560 / 8 = 70
+
+INTERPRETATION
+--------------
+
+The base prediction is 70 when:
+
+    x1 = 0 ---> 5 study hours
+    x2 = 0 ---> 80% attendance
+    x3 = 0 ---> midpoint between No and Yes effect-coded groups
+
+No real student has x3 = 0 in this binary feature. The intercept is the balanced
+midpoint used to compare the two groups.
+
+----------------------------------------------------------------------------------------
+15.4 LEARN THE STUDY-HOURS COEFFICIENT b1
+----------------------------------------------------------------------------------------
+
+METHOD A — CONTROLLED GROUP DIFFERENCE
+--------------------------------------
+
+    Mean when x1 = -1 (3 hours) = 62
+    Mean when x1 = +1 (7 hours) = 78
+
+Moving from -1 to +1 is a two-unit x1 change.
+
+[FORMULA]
+
+         Mean at x1=+1 - Mean at x1=-1
+    b1 = --------------------------------
+                         2
+
+PURPOSE — WHY DIVIDE BY 2?
+--------------------------
+
+The coefficient describes change per ONE x1 unit, while the two group codes are
+two units apart:
+
+    +1 - (-1) = 2
+
+APPLICATION
+-----------
+
+    b1 = (78 - 62) / 2
+       = 16 / 2
+       = 8
+
+INTERPRETATION IN TRANSFORMED UNITS
+-----------------------------------
+
+Increasing x1 by one unit is associated with an 8-point increase in predicted
+score while attendance and preparation remain constant.
+
+INTERPRETATION IN ORIGINAL HOURS
+--------------------------------
+
+One x1 unit equals two study hours:
+
+    8 points / 2 hours = 4 points per additional study hour
+
+This is an association inside the model, not proof of causal benefit.
+
+METHOD B — LEAST-SQUARES COEFFICIENT FORMULA
+--------------------------------------------
+
+[FORMULA]
+
+              Sum[x1_i * (y_i - y-bar)]
+    b1 = -----------------------------------
+                     Sum[x1_i^2]
+
+PURPOSE — WHY THIS FORMULA?
+---------------------------
+
+It measures how the centered target moves with x1, divided by how much x1 varies.
+Because x1 is orthogonal to the other model features, this ratio isolates its
+least-squares contribution.
+
+APPLICATION
+-----------
+
+For this balanced table, using y directly gives the same numerator because
+Sum(x1) = 0:
+
+    Sum(x1*y)
+      = -(56 + 62 + 62 + 68) + (68 + 74 + 82 + 88)
+      = -248 + 312
+      = 64
+
+    Sum(x1^2) = eight values of 1 = 8
+
+    b1 = 64 / 8 = 8
+
+Both methods agree.
+
+----------------------------------------------------------------------------------------
+15.5 LEARN THE ATTENDANCE COEFFICIENT b2
+----------------------------------------------------------------------------------------
+
+GROUP MEANS
+-----------
+
+    Mean at x2 = -1 (70%) = 65
+    Mean at x2 = +1 (90%) = 75
+
+[FORMULA]
+
+         Mean at x2=+1 - Mean at x2=-1
+    b2 = --------------------------------
+                         2
+
+PURPOSE
+-------
+
+The groups are two x2 units apart, so half their controlled mean difference is
+the contribution per one x2 unit.
+
+APPLICATION
+-----------
+
+    b2 = (75 - 65) / 2
+       = 10 / 2
+       = 5
+
+CHECK USING SUMS
+----------------
+
+    Sum(x2*y)
+      = -(56 + 62 + 68 + 74) + (62 + 68 + 82 + 88)
+      = -260 + 300
+      = 40
+
+    Sum(x2^2) = 8
+
+    b2 = 40 / 8 = 5
+
+INTERPRETATION IN ORIGINAL UNITS
+--------------------------------
+
+One x2 unit equals ten attendance percentage points:
+
+    5 score points / 10 percentage points
+      = 0.5 predicted-score point per attendance percentage point
+
+Again, this is a conditional association in the tiny dataset, not a causal law.
+
+----------------------------------------------------------------------------------------
+15.6 LEARN THE PREPARATION COEFFICIENT b3
+----------------------------------------------------------------------------------------
+
+GROUP MEANS
+-----------
+
+    Mean for No  (x3 = -1) = 67
+    Mean for Yes (x3 = +1) = 73
+
+[FORMULA]
+
+         Mean at x3=+1 - Mean at x3=-1
+    b3 = --------------------------------
+                         2
+
+PURPOSE
+-------
+
+The effect-coded groups are two numerical units apart. Dividing by two gives the
+coefficient per coded unit and places the two group effects symmetrically around
+the intercept.
+
+APPLICATION
+-----------
+
+    b3 = (73 - 67) / 2
+       = 6 / 2
+       = 3
+
+CHECK USING SUMS
+----------------
+
+    Sum(x3*y)
+      = -(56 + 62 + 68 + 82) + (62 + 68 + 74 + 88)
+      = -268 + 292
+      = 24
+
+    Sum(x3^2) = 8
+
+    b3 = 24 / 8 = 3
+
+INTERPRETATION
+--------------
+
+    No contribution  = -3
+    Yes contribution = +3
+
+The predicted difference from No to Yes is 6 points when hours and attendance
+are held constant.
+
+----------------------------------------------------------------------------------------
+15.7 THE LEARNED MODEL
+----------------------------------------------------------------------------------------
+
+CENTERED MODEL
+--------------
+
+    Predicted Score = 70 + 8*x1 + 5*x2 + 3*x3
+
+Where:
+
+    x1 = (Hours - 5) / 2
+    x2 = (Attendance - 80) / 10
+    x3 = -1 for No, +1 for Yes
+
+MODEL CARD
+----------
+
+    +------------------------------------------------------------------+
+    | BASE SCORE             : 70                                      |
+    | STUDY COEFFICIENT      : +8 per 2-hour model unit                |
+    |                        : equivalent to +4 per hour                |
+    | ATTENDANCE COEFFICIENT : +5 per 10 percentage points             |
+    |                        : equivalent to +0.5 per percentage point  |
+    | PREPARATION            : No = -3, Yes = +3                        |
+    |                        : full No-to-Yes difference = 6            |
+    | TRAINING HOURS RANGE   : 3 to 7                                   |
+    | TRAINING ATTENDANCE    : 70% to 90%                               |
+    +------------------------------------------------------------------+
+
+----------------------------------------------------------------------------------------
+15.8 OPTIONAL RAW-UNIT FORM
+----------------------------------------------------------------------------------------
+
+The centered formula can be rearranged into original units. Define:
+
+    P = 0 for No
+    P = 1 for Yes
+
+Then x3 = 2P - 1.
+
+Start with:
+
+    y-hat = 70 + 8((Hours-5)/2) + 5((Attendance-80)/10) + 3(2P-1)
+
+Simplify each contribution:
+
+    8((Hours-5)/2)        = 4*Hours - 20
+    5((Attendance-80)/10) = 0.5*Attendance - 40
+    3(2P-1)               = 6P - 3
+
+Combine constants:
+
+    70 - 20 - 40 - 3 = 7
+
+RAW-UNIT MODEL
+--------------
+
+    Predicted Score = 7 + 4*Hours + 0.5*Attendance + 6*P
+
+WHY SHOW THIS FORM?
+-------------------
+
+It confirms the original-unit relationships directly:
+
+  - +4 points per study hour;
+  - +0.5 point per attendance percentage point;
+  - +6 points for Yes versus No.
+
+WHY PREFER THE CENTERED FORM FOR EXPLANATION?
+---------------------------------------------
+
+The raw intercept 7 corresponds to zero study hours, zero attendance, and No
+preparation—an unrealistic combination far outside the data. The centered
+intercept 70 has a more meaningful reference interpretation.
+
+[OUTPUT]
+--------
+
+Eight training examples have been compressed into four learned parameters:
+
+    b0 = 70, b1 = 8, b2 = 5, b3 = 3
+
+
+========================================================================================
+16. STEP 10 — MAKE AND INSPECT TRAINING PREDICTIONS
+========================================================================================
+
+Training does not end when coefficients are found. We must put every training row back
+through the learned formula and inspect what the model got right and wrong.
+
+PREDICTION FLOW FOR ONE ROW
+---------------------------
+
+    Original row
+        |
+        v
+    Transform Hours, Attendance, Preparation
+        |
+        v
+    Multiply each transformed value by its coefficient
+        |
+        v
+    Add the base score and all contributions
+        |
+        v
+    Predicted score
+        |
+        v
+    Compare with actual score -> residual
+
+----------------------------------------------------------------------------------------
+16.1 FULL WORKED EXAMPLE — STUDENT S07
+----------------------------------------------------------------------------------------
+
+Original information:
+
+    Hours = 7
+    Attendance = 90%
+    Preparation = No
+    Actual score = 82
+
+Step A — transform the inputs:
+
+    x1 = (7 - 5) / 2       = 1
+    x2 = (90 - 80) / 10    = 1
+    x3 = -1 because preparation is No
+
+Step B — calculate contributions:
+
+    Base contribution        = 70
+    Study-hours contribution = 8 * 1    = +8
+    Attendance contribution  = 5 * 1    = +5
+    Preparation contribution = 3 * (-1) = -3
+
+Step C — add the contributions:
+
+    Predicted score = 70 + 8 + 5 - 3 = 80
+
+Step D — compare with reality:
+
+    Actual score    = 82
+    Predicted score = 80
+    Residual         = Actual - Predicted
+                     = 82 - 80
+                     = +2
+
+The positive residual means the model underpredicted S07 by 2 points.
+
+    70 base
+      + 8 study
+      + 5 attendance
+      - 3 preparation
+      ----------------
+       80 predicted -----> 82 actual
+                         +2 residual
+
+----------------------------------------------------------------------------------------
+16.2 ALL TRAINING PREDICTIONS
+----------------------------------------------------------------------------------------
+
+    +---------+----+----+----+--------+-----------+----------------------+----------+
+    | Student | x1 | x2 | x3 | Actual | Predicted | Residual A - P       | |Error|  |
+    +---------+----+----+----+--------+-----------+----------------------+----------+
+    | S01     | -1 | -1 | -1 |   56   |    54     | +2  underprediction |    2     |
+    | S02     | -1 | -1 | +1 |   62   |    60     | +2  underprediction |    2     |
+    | S03     | -1 | +1 | -1 |   62   |    64     | -2  overprediction  |    2     |
+    | S04     | -1 | +1 | +1 |   68   |    70     | -2  overprediction  |    2     |
+    | S05     | +1 | -1 | -1 |   68   |    70     | -2  overprediction  |    2     |
+    | S06     | +1 | -1 | +1 |   74   |    76     | -2  overprediction  |    2     |
+    | S07     | +1 | +1 | -1 |   82   |    80     | +2  underprediction |    2     |
+    | S08     | +1 | +1 | +1 |   88   |    86     | +2  underprediction |    2     |
+    +---------+----+----+----+--------+-----------+----------------------+----------+
+
+The model is close, but it is not perfect. That is useful: a realistic regression
+lesson should show errors and teach us to diagnose them.
+
+----------------------------------------------------------------------------------------
+16.3 TRAINING ERROR METRICS
+----------------------------------------------------------------------------------------
+
+MEAN ABSOLUTE ERROR (MAE)
+-------------------------
+
+Formula:
+
+             1   n
+    MAE =   ---  SUM |yi - y-hat_i|
+             n  i=1
+
+WHY DO WE NEED IT?
+
+MAE answers a very practical question: "By how many exam points is the prediction
+wrong on average, ignoring whether it was too high or too low?"
+
+WHAT DO THE COMPONENTS MEAN?
+
+    n        = number of evaluated students
+    yi       = actual score for student i
+    y-hat_i  = predicted score for student i
+    |...|    = absolute value, which removes the positive or negative direction
+    SUM      = add the absolute errors for all students
+
+APPLICATION TO THE TRAINING DATA:
+
+    Absolute errors = 2, 2, 2, 2, 2, 2, 2, 2
+    Sum              = 16
+    n                = 8
+
+    MAE = 16 / 8 = 2 exam points
+
+Interpretation: on these training examples, the model misses the actual score by
+2 points on average.
+
+MEAN SQUARED ERROR (MSE)
+------------------------
+
+Formula:
+
+             1   n
+    MSE =   ---  SUM (yi - y-hat_i)^2
+             n  i=1
+
+WHY DO WE NEED IT?
+
+Squaring makes large mistakes grow much faster than small mistakes. An error of
+10 contributes 100, while an error of 2 contributes only 4. MSE is therefore useful
+when large prediction failures deserve extra attention. It is also the objective
+ordinary least-squares regression minimizes during training.
+
+WHAT DO THE COMPONENTS MEAN?
+
+    yi - y-hat_i = residual for one student
+    (...)^2       = square the residual, making it non-negative
+    SUM           = total squared error
+    1/n           = convert the total into an average
+
+APPLICATION:
+
+    Squared errors = 4, 4, 4, 4, 4, 4, 4, 4
+    Sum             = 32
+
+    MSE = 32 / 8 = 4 squared-score-points
+
+MSE is measured in squared units, so it is useful mathematically but less natural to
+say aloud.
+
+ROOT MEAN SQUARED ERROR (RMSE)
+------------------------------
+
+Formula:
+
+    RMSE = square root of MSE
+
+WHY DO WE NEED IT?
+
+Taking the square root returns the metric to ordinary exam-score points, while keeping
+the extra sensitivity to large errors introduced by squaring.
+
+APPLICATION:
+
+    RMSE = square root of 4 = 2 exam points
+
+MAE and RMSE are equal here because every training error has exactly the same size.
+In most real datasets RMSE is larger than MAE because errors have different sizes.
+
+COEFFICIENT OF DETERMINATION (R-SQUARED)
+----------------------------------------
+
+Formula:
+
+                        SSE
+    R-squared = 1 -  ---------
+                        SST
+
+Where:
+
+    SSE = SUM (yi - y-hat_i)^2
+    SST = SUM (yi - y-bar)^2
+    y-bar = mean actual score
+
+WHY DO WE NEED IT?
+
+R-squared compares our regression model with a simple mean-prediction baseline.
+It asks: "How much of the variation in scores did the model account for compared
+with always predicting the mean?"
+
+WHAT DOES EACH COMPONENT REPRESENT?
+
+    SSE = variation left unexplained by the model
+    SST = total variation present around the mean
+    SSE/SST = unexplained fraction
+    1 - SSE/SST = explained fraction
+
+APPLICATION TO TRAINING DATA:
+
+    Training mean y-bar = 70
+    SSE = 32
+
+    SST = (56-70)^2 + (62-70)^2 + (62-70)^2 + (68-70)^2
+        + (68-70)^2 + (74-70)^2 + (82-70)^2 + (88-70)^2
+
+        = 196 + 64 + 64 + 4 + 4 + 16 + 144 + 324
+        = 816
+
+    R-squared = 1 - (32 / 816)
+              = 0.9608, approximately 0.961
+
+Interpretation: within this tiny synthetic training set, the model accounts for about
+96.1% of the variation around the mean. This is not evidence that it will perform the
+same way on real students.
+
+----------------------------------------------------------------------------------------
+16.4 RESIDUAL PATTERN: A CLUE THE ADDITIVE MODEL MISSED SOMETHING
+----------------------------------------------------------------------------------------
+
+Look only at study and attendance signs:
+
+                         Attendance x2
+                         -1           +1
+                    +-----------+-----------+
+    Hours x1 = -1   |    +2     |    -2     |
+                    +-----------+-----------+
+    Hours x1 = +1   |    -2     |    +2     |
+                    +-----------+-----------+
+
+The residual is +2 when study and attendance signs match, and -2 when they differ.
+This checkerboard is not random-looking. It suggests an interaction: the effect of
+studying may differ depending on attendance, or vice versa.
+
+This teaches an important diagnostic loop:
+
+    Calculate residuals
+           |
+           v
+    Look for a pattern
+       /          \
+    none          pattern
+     |               |
+     v               v
+    model may      investigate missing interaction,
+    be adequate    nonlinearity, subgroup, or data issue
+
+We will discuss interaction carefully in Section 21. We do not automatically add it
+just because it fits eight handcrafted examples.
+
+[OUTPUT]
+--------
+
+Training evaluation:
+
+    MAE = 2.00 points
+    MSE = 4.00 squared points
+    RMSE = 2.00 points
+    R-squared = 0.961
+
+
+========================================================================================
+17. STEP 11 — EVALUATE ON STUDENTS THE MODEL DID NOT TRAIN ON
+========================================================================================
+
+The four test students were kept hidden while the coefficients were learned. Test
+evaluation therefore gives a cleaner check of how the fixed model handles unseen rows.
+
+    Training data -> learn b0, b1, b2, b3
+                              |
+                              v
+                         Freeze model
+                              |
+                              v
+    Test inputs ---------> predict ---------> compare with test actuals
+
+The test actual scores must never be used to adjust the model during this evaluation.
+If we keep changing the model after looking at the test result, the test set becomes
+part of training and no longer provides an honest final check.
+
+----------------------------------------------------------------------------------------
+17.1 MANUAL TEST PREDICTIONS
+----------------------------------------------------------------------------------------
+
+MODEL:
+
+    Predicted Score = 70 + 8*x1 + 5*x2 + 3*x3
+
+STUDENT S09
+-----------
+
+    Hours = 4              -> x1 = (4-5)/2 = -0.5
+    Attendance = 75%       -> x2 = (75-80)/10 = -0.5
+    Preparation = No       -> x3 = -1
+
+    Prediction = 70 + 8(-0.5) + 5(-0.5) + 3(-1)
+               = 70 - 4 - 2.5 - 3
+               = 60.5
+
+    Actual = 61; residual = 61 - 60.5 = +0.5
+
+STUDENT S10
+-----------
+
+    Hours = 6              -> x1 = +0.5
+    Attendance = 85%       -> x2 = +0.5
+    Preparation = Yes      -> x3 = +1
+
+    Prediction = 70 + 8(0.5) + 5(0.5) + 3(1)
+               = 70 + 4 + 2.5 + 3
+               = 79.5
+
+    Actual = 81; residual = 81 - 79.5 = +1.5
+
+STUDENT S11
+-----------
+
+    Hours = 8              -> x1 = +1.5
+    Attendance = 95%       -> x2 = +1.5
+    Preparation = Yes      -> x3 = +1
+
+    Prediction = 70 + 8(1.5) + 5(1.5) + 3(1)
+               = 70 + 12 + 7.5 + 3
+               = 92.5
+
+    Actual = 91; residual = 91 - 92.5 = -1.5
+
+STUDENT S12
+-----------
+
+    Hours = 2              -> x1 = -1.5
+    Attendance = 65%       -> x2 = -1.5
+    Preparation = No       -> x3 = -1
+
+    Prediction = 70 + 8(-1.5) + 5(-1.5) + 3(-1)
+               = 70 - 12 - 7.5 - 3
+               = 47.5
+
+    Actual = 49; residual = 49 - 47.5 = +1.5
+
+----------------------------------------------------------------------------------------
+17.2 PREDICTED VERSUS ACTUAL TABLE
+----------------------------------------------------------------------------------------
+
+    +---------+--------+-----------+---------------+--------------+-----------------+
+    | Student | Actual | Predicted | Residual A-P  | Absolute Err | Squared Error   |
+    +---------+--------+-----------+---------------+--------------+-----------------+
+    | S09     |  61.0  |   60.5    |    +0.5       |     0.5      |      0.25       |
+    | S10     |  81.0  |   79.5    |    +1.5       |     1.5      |      2.25       |
+    | S11     |  91.0  |   92.5    |    -1.5       |     1.5      |      2.25       |
+    | S12     |  49.0  |   47.5    |    +1.5       |     1.5      |      2.25       |
+    +---------+--------+-----------+---------------+--------------+-----------------+
+    | TOTAL   |        |           |    +2.0       |     5.0      |      7.00       |
+    +---------+--------+-----------+---------------+--------------+-----------------+
+
+Actual-versus-predicted number line:
+
+    S12: 47.5 P -- 49 A
+    S09:              60.5 P - 61 A
+    S10:                                  79.5 P -- 81 A
+    S11:                                                91 A -- 92.5 P
+         |----------|----------|----------|----------|----------|
+        45         55         65         75         85         95
+
+P = predicted; A = actual.
+
+----------------------------------------------------------------------------------------
+17.3 CALCULATE TEST MAE
+----------------------------------------------------------------------------------------
+
+WHY USE IT HERE?
+
+Stakeholders naturally understand exam points. MAE tells us the typical absolute miss
+without allowing positive and negative residuals to cancel.
+
+    MAE = (0.5 + 1.5 + 1.5 + 1.5) / 4
+        = 5.0 / 4
+        = 1.25 points
+
+Plain-language result: across these four test students, the prediction was 1.25 exam
+points away from the actual score on average.
+
+----------------------------------------------------------------------------------------
+17.4 CALCULATE TEST MSE AND RMSE
+----------------------------------------------------------------------------------------
+
+WHY USE BOTH?
+
+MSE is the squared-loss measure used by least squares. RMSE converts that penalty back
+to score points so people can interpret it more naturally.
+
+    MSE = (0.25 + 2.25 + 2.25 + 2.25) / 4
+        = 7.00 / 4
+        = 1.75 squared points
+
+    RMSE = square root of 1.75
+         = approximately 1.32 points
+
+RMSE is slightly greater than MAE because three errors are larger than the remaining
+error. There is no extreme error in this small test set.
+
+----------------------------------------------------------------------------------------
+17.5 CALCULATE TEST R-SQUARED
+----------------------------------------------------------------------------------------
+
+First calculate the mean actual test score:
+
+    y-bar = (61 + 81 + 91 + 49) / 4
+          = 282 / 4
+          = 70.5
+
+Now calculate total variation around that mean:
+
+    SST = (61-70.5)^2 + (81-70.5)^2 + (91-70.5)^2 + (49-70.5)^2
+        = 90.25 + 110.25 + 420.25 + 462.25
+        = 1083
+
+The model's squared error is:
+
+    SSE = 7
+
+Therefore:
+
+    R-squared = 1 - (7 / 1083)
+              = approximately 0.994
+
+Plain-language result: on this deliberately simple synthetic test set, the model
+accounts for about 99.4% of score variation relative to the test mean.
+
+IMPORTANT WARNING
+-----------------
+
+This high value does not prove real-world accuracy. The dataset has only 12 manually
+constructed rows and was designed to make arithmetic visible. A realistic result needs
+many representative students, a protected test process, uncertainty analysis, subgroup
+checks, and monitoring after use.
+
+----------------------------------------------------------------------------------------
+17.6 COMPARE WITH THE BASELINE
+----------------------------------------------------------------------------------------
+
+    +---------------------------+--------------------+--------------------+
+    | Test metric               | Mean baseline      | Regression model   |
+    +---------------------------+--------------------+--------------------+
+    | MAE                       | 15.50 points       | 1.25 points        |
+    | MSE                       | 271.00             | 1.75               |
+    | RMSE                      | 16.46 points       | 1.32 points        |
+    +---------------------------+--------------------+--------------------+
+
+Teaching-set MAE reduction:
+
+                        Baseline MAE - Model MAE
+    Relative reduction = ------------------------ * 100%
+                              Baseline MAE
+
+WHY CALCULATE IT?
+
+It summarizes how much the average absolute error fell relative to doing almost no
+modeling. It is a comparison, not a universal measure of model quality.
+
+APPLICATION:
+
+    Relative reduction = (15.50 - 1.25) / 15.50 * 100%
+                       = approximately 91.9%
+
+Again, this dramatic improvement comes from a handcrafted educational dataset.
+
+----------------------------------------------------------------------------------------
+17.7 CHECK ERROR DIRECTION
+----------------------------------------------------------------------------------------
+
+Mean residual:
+
+    Mean residual = (+0.5 + 1.5 - 1.5 + 1.5) / 4
+                  = 2.0 / 4
+                  = +0.5 point
+
+WHY CHECK IT?
+
+MAE and RMSE ignore direction. Mean residual helps detect systematic overprediction or
+underprediction. A positive mean residual means Actual - Predicted is positive on
+average, so the model tends to predict slightly too low.
+
+With only four test students, +0.5 is an observation—not reliable proof of bias.
+
+----------------------------------------------------------------------------------------
+17.8 EVALUATION DECISION FLOW
+----------------------------------------------------------------------------------------
+
+    Does the model beat the baseline?
+           |
+       +---+---+
+       |       |
+      No      Yes
+       |       |
+       v       v
+    Revisit   Are errors acceptable for the intended use?
+    data/model      |
+                 +--+--+
+                 |     |
+                No    Yes
+                 |     |
+                 v     v
+              Improve  Check residual patterns,
+                       subgroups, leakage, robustness
+                              |
+                              v
+                       Decide with stakeholders
+
+Our toy model passes the arithmetic learning objective and beats its baseline. It does
+not pass a real deployment review because the evidence is too small and synthetic.
+
+[OUTPUT]
+--------
+
+Test evaluation:
+
+    MAE = 1.25 points
+    MSE = 1.75 squared points
+    RMSE = 1.32 points
+    R-squared = 0.994
+    Mean residual = +0.50 point (slight underprediction in this sample)
+
+
+========================================================================================
+18. STEP 12 — PREDICT A NEW STUDENT'S SCORE
+========================================================================================
+
+Suppose a new student has not yet taken the exam:
+
+    Hours studied       = 5.5
+    Attendance          = 88%
+    Test preparation    = Yes
+    Actual exam score   = not known yet
+
+----------------------------------------------------------------------------------------
+18.1 TRANSFORM THE NEW INPUT
+----------------------------------------------------------------------------------------
+
+    x1 = (5.5 - 5) / 2 = 0.25
+    x2 = (88 - 80) / 10 = 0.80
+    x3 = +1 because preparation is Yes
+
+Why must we use the same transformation? The coefficients were learned in transformed
+units. Feeding raw values into that centered formula would mix incompatible units and
+produce a meaningless prediction.
+
+    New raw input
+        |
+        +--> 5.5 hours --------> x1 = 0.25
+        +--> 88% attendance ---> x2 = 0.80
+        +--> Yes preparation ---> x3 = +1
+                                      |
+                                      v
+                                 Regression formula
+
+----------------------------------------------------------------------------------------
+18.2 CALCULATE THE PREDICTION
+----------------------------------------------------------------------------------------
+
+    Predicted Score = 70 + 8(0.25) + 5(0.80) + 3(1)
+                    = 70 + 2 + 4 + 3
+                    = 79
+
+Contribution waterfall:
+
+    Reference student                         70
+    Study-hours contribution                  +2  -> 72
+    Attendance contribution                   +4  -> 76
+    Preparation contribution                  +3  -> 79 predicted
+
+The predicted score is 79 out of 100.
+
+----------------------------------------------------------------------------------------
+18.3 CAN WE CALCULATE THE ERROR NOW?
+----------------------------------------------------------------------------------------
+
+No. Error needs both an actual value and a prediction:
+
+    Error = Actual - Predicted
+
+The exam has not happened, so Actual is unavailable.
+
+    Prediction now -> wait for exam -> record actual -> calculate error -> monitor model
+
+If the later actual score is 76:
+
+    Residual = 76 - 79 = -3
+
+That would mean an overprediction of 3 points. This is an illustration only; 76 is not
+part of the dataset.
+
+----------------------------------------------------------------------------------------
+18.4 INTERPOLATION OR EXTRAPOLATION?
+----------------------------------------------------------------------------------------
+
+The new student's 5.5 study hours and 88% attendance lie within the training ranges:
+
+    Hours training range:      3 -------- 5.5 -------- 7
+    Attendance training range: 70% ------ 88% -------- 90%
+
+This is interpolation—predicting inside the observed range. Linear models are normally
+more trustworthy here than in extrapolation far outside the training range.
+
+[OUTPUT]
+--------
+
+New-student prediction: 79 points. No evaluation error can be reported until the actual
+exam score becomes available.
+
+
+========================================================================================
+19. UNDERSTAND HOW EACH FEATURE AFFECTS THE PREDICTION
+========================================================================================
+
+Multiple regression is valuable because it can separate feature contributions while
+holding the other included features fixed.
+
+----------------------------------------------------------------------------------------
+19.1 CONTRIBUTION VIEW FOR THE NEW STUDENT
+----------------------------------------------------------------------------------------
+
+    +--------------------+------------------+-------------+--------------------------+
+    | Component          | Model value      | Coefficient | Score contribution       |
+    +--------------------+------------------+-------------+--------------------------+
+    | Base               |       1          |     70      | 70                       |
+    | Study hours x1     |      0.25        |      8      | +2                       |
+    | Attendance x2      |      0.80        |      5      | +4                       |
+    | Preparation x3     |      1           |      3      | +3                       |
+    +--------------------+------------------+-------------+--------------------------+
+    | Total              |                  |             | 79 predicted             |
+    +--------------------+------------------+-------------+--------------------------+
+
+----------------------------------------------------------------------------------------
+19.2 HOLD-OTHER-THINGS-FIXED COMPARISONS
+----------------------------------------------------------------------------------------
+
+ONE ADDITIONAL STUDY HOUR
+-------------------------
+
+One raw hour changes x1 by 1/2 = 0.5.
+
+    Score change = b1 * change in x1
+                 = 8 * 0.5
+                 = +4 predicted points
+
+TEN ADDITIONAL ATTENDANCE PERCENTAGE POINTS
+-------------------------------------------
+
+Ten percentage points changes x2 by 1.
+
+    Score change = b2 * 1 = +5 predicted points
+
+CHANGING PREPARATION FROM NO TO YES
+-----------------------------------
+
+No is -1 and Yes is +1, so the encoded change is 2.
+
+    Score change = b3 * 2
+                 = 3 * 2
+                 = +6 predicted points
+
+These are model associations conditional on the included features. They do not prove
+that forcing a student to change one factor will cause exactly that score change.
+
+----------------------------------------------------------------------------------------
+19.3 A COUNTERFACTUAL COMPARISON
+----------------------------------------------------------------------------------------
+
+Keep the new student's hours and attendance fixed, but compare preparation statuses:
+
+    If No:  70 + 8(0.25) + 5(0.80) + 3(-1) = 73
+    If Yes: 70 + 8(0.25) + 5(0.80) + 3(+1) = 79
+                                                       ----
+    Difference                                          6
+
+This says the model predicts a 6-point difference between the two otherwise identical
+input records. It does not establish a causal treatment effect because preparation may
+be associated with motivation, school resources, prior achievement, or other omitted
+factors.
+
+----------------------------------------------------------------------------------------
+19.4 ASSOCIATION IS NOT CAUSATION
+----------------------------------------------------------------------------------------
+
+    Observed preparation -----> score
+             ^                    ^
+             |                    |
+       motivation, support, prior knowledge, resources
+
+Unmeasured factors may influence both preparation and score. Regression can adjust only
+for variables that are properly measured and included. Causal conclusions require a
+stronger research design and assumptions beyond this predictive lesson.
+
+[OUTPUT]
+--------
+
+The model is additive and explainable: prediction = reference score + one contribution
+from each transformed input. Interpret contributions as learned associations, not
+guaranteed causes.
+
+
+========================================================================================
+20. REGRESSION ASSUMPTIONS AND DIAGNOSTIC QUESTIONS
+========================================================================================
+
+A good test metric alone is not enough. Linear regression relies on a set of practical
+conditions. An assumption is not something we blindly declare true; it is something we
+inspect, question, and monitor.
+
+    Good-looking metric
+           |
+           v
+    Check assumptions and data quality
+           |
+           v
+    Check subgroups and intended use
+           |
+           v
+    Decide whether evidence is sufficient
+
+----------------------------------------------------------------------------------------
+20.1 LINEARITY
+----------------------------------------------------------------------------------------
+
+MEANING
+-------
+
+The model assumes that a one-unit change in a feature has a constant additive
+relationship with the predicted score, after holding other included inputs fixed.
+
+In raw units our model assumes:
+
+    +1 study hour                 -> +4 predicted points
+    +1 attendance percentage point -> +0.5 predicted point
+
+WHY IT MATTERS
+--------------
+
+Real learning may show diminishing returns. Moving from one to two study hours might
+matter more than moving from eleven to twelve. A straight line cannot express that bend.
+
+    Score
+      ^                          possible real pattern
+      |                    . . . __________
+      |               . . /
+      |          . . /
+      |     . . /
+      |----/---------------------------------> Hours
+
+    A straight regression line may fit the middle but miss both ends.
+
+HOW TO CHECK
+------------
+
+Plot residuals against predictions and each numeric feature. Curves or repeated shapes
+suggest nonlinearity. Our tiny dataset contains only a few designed levels, so it cannot
+provide a convincing check.
+
+----------------------------------------------------------------------------------------
+20.2 ADDITIVITY AND INTERACTIONS
+----------------------------------------------------------------------------------------
+
+MEANING
+-------
+
+The current formula adds separate contributions:
+
+    Study contribution + Attendance contribution + Preparation contribution
+
+It assumes the study-hours contribution is the same at every attendance level.
+
+WHY IT MATTERS
+--------------
+
+The residual checkerboard in Section 16 suggests study and attendance may work together.
+If the effect of one input depends on another, the purely additive model is incomplete.
+
+HOW TO CHECK
+------------
+
+Compare residual patterns across combinations of inputs, supported by enough real data.
+Do not add many interactions to a tiny dataset merely to remove every training error.
+
+----------------------------------------------------------------------------------------
+20.3 INDEPENDENT OBSERVATIONS
+----------------------------------------------------------------------------------------
+
+MEANING
+-------
+
+One row should not secretly duplicate or strongly depend on another in a way the
+evaluation ignores.
+
+WHY IT MATTERS
+--------------
+
+If the same student appears in both train and test records, the test result can look
+better than performance on a truly new student. Students in the same classroom may also
+share teacher, curriculum, and school effects.
+
+    Same student / same class
+          |          |
+          +----+-----+
+               v
+    Rows are related, not fully independent
+
+PRACTICAL RESPONSE
+------------------
+
+Split by student when there are repeated exams, by school when evaluating transfer to
+new schools, or by time when predicting future cohorts. Choose the split to match the
+real deployment question.
+
+----------------------------------------------------------------------------------------
+20.4 APPROXIMATELY CONSTANT RESIDUAL SPREAD
+----------------------------------------------------------------------------------------
+
+This condition is often called homoscedasticity.
+
+MEANING
+-------
+
+The typical size of errors should not systematically grow or shrink across the
+prediction range.
+
+Desired residual picture:
+
+    Residual
+       ^       .  .   . .
+       |   . .  . . .
+     0 +--------------------------> Predicted score
+       |    . . .   . .
+       v
+
+Concerning funnel:
+
+    Residual
+       ^                    .       .
+       |             .   .     .
+     0 +--.---.---.----------------> Predicted score
+       |          .    .       .
+       v
+
+WHY IT MATTERS
+--------------
+
+A funnel means one score region is less predictable than another. A single overall MAE
+can then hide poor reliability for high- or low-scoring students.
+
+----------------------------------------------------------------------------------------
+20.5 RESIDUALS CENTERED NEAR ZERO
+----------------------------------------------------------------------------------------
+
+MEANING
+-------
+
+The model should not consistently predict too high or too low for the population or for
+important subgroups.
+
+Our test mean residual is +0.5 point, suggesting slight underprediction in four rows.
+That sample is far too small for a reliable conclusion.
+
+CHECK BOTH OVERALL AND BY GROUP
+-------------------------------
+
+    Overall mean residual near 0
+                   |
+                   v
+       Still check school, region, access,
+       gender and other lawful, relevant groups
+
+Opposite subgroup errors can cancel and make the overall average look perfect.
+
+----------------------------------------------------------------------------------------
+20.6 RESIDUAL NORMALITY: WHEN DOES IT MATTER?
+----------------------------------------------------------------------------------------
+
+For basic point prediction, residuals do not have to be perfectly bell-shaped. Normality
+becomes more important when building classical confidence intervals or significance
+tests, especially with small samples.
+
+    Goal is only point prediction? -> prioritize out-of-sample error and calibration
+    Goal includes inference?       -> inspect residual distribution and assumptions
+
+Do not reject a useful predictive model solely because a large real dataset has mildly
+non-normal residuals. Do investigate severe skew, multiple clusters, and extreme tails.
+
+----------------------------------------------------------------------------------------
+20.7 LOW MULTICOLLINEARITY
+----------------------------------------------------------------------------------------
+
+MEANING
+-------
+
+Input features should not be nearly redundant copies of each other.
+
+Example:
+
+    Hours studied per day
+             |
+             +------ almost same information ------ Hours studied per week
+
+WHY IT MATTERS
+--------------
+
+The model may still predict well, but individual coefficients can become unstable. A
+small data change may make one coefficient rise and another fall, weakening explanation.
+
+In our balanced training table the transformed features are orthogonal, so this
+particular teaching dataset avoids multicollinearity by construction.
+
+----------------------------------------------------------------------------------------
+20.8 NO UNCHECKED INFLUENTIAL OUTLIERS
+----------------------------------------------------------------------------------------
+
+An outlier is not automatically an error. It may be a data-entry problem or an important
+rare case.
+
+    Unusual row found
+          |
+          v
+    Is the value impossible or incorrectly recorded?
+       /              \
+     Yes              No / unsure
+      |                  |
+      v                  v
+    correct using      retain, investigate influence,
+    source evidence    report sensitivity
+
+Because squared errors heavily penalize large misses, one extreme row can pull a least-
+squares line. Never delete a valid student merely to improve a metric.
+
+----------------------------------------------------------------------------------------
+20.9 REPRESENTATIVE DATA
+----------------------------------------------------------------------------------------
+
+The future students must be reasonably represented by the training data.
+
+    Training population ---- similar? ----> Deployment population
+                                  |
+                         no ------+------ yes
+                         |                   |
+                         v                   v
+                  collect/reassess      continue checks
+
+A model trained in one grade, curriculum, language, or school system may not transfer
+to another. Distribution shift is a data problem, not something R-squared can solve.
+
+----------------------------------------------------------------------------------------
+20.10 MEASUREMENT QUALITY
+----------------------------------------------------------------------------------------
+
+"Hours studied" could mean self-reported time, app-recorded time, or teacher-estimated
+time. Those are not interchangeable. Attendance may also be recorded differently across
+schools.
+
+    Concept we want: meaningful study effort
+                    |
+                    v
+    Measurement used: reported hours
+                    |
+                    v
+    possible noise, exaggeration, different definitions
+
+Poor measurement weakens both accuracy and coefficient interpretation.
+
+----------------------------------------------------------------------------------------
+20.11 OUTPUT BOUNDS
+----------------------------------------------------------------------------------------
+
+Exam scores normally lie between 0 and 100. Ordinary linear regression has no built-in
+knowledge of those limits.
+
+For an extreme hypothetical input:
+
+    Hours = 15, Attendance = 100%, Preparation = Yes
+
+Using the raw model:
+
+    Predicted score = 7 + 4(15) + 0.5(100) + 6(1)
+                    = 7 + 60 + 50 + 6
+                    = 123
+
+That is impossible for a 100-point exam. The calculation demonstrates why extrapolation
+and boundary checks matter. Possible responses include restricting the model's valid
+input range, choosing a bounded modeling approach, and reviewing rather than silently
+clipping outputs.
+
+----------------------------------------------------------------------------------------
+20.12 ASSUMPTION REVIEW MAP
+----------------------------------------------------------------------------------------
+
+    Data provenance and definitions
+                 |
+                 v
+    Representative? -- no --> collect suitable data
+                 |
+                yes
+                 v
+    Proper split and no leakage?
+                 |
+                yes
+                 v
+    Residual checks: shape, spread, direction, outliers, subgroups
+                 |
+                 v
+    Coefficients stable and plausible?
+                 |
+                 v
+    Predictions valid inside intended ranges?
+                 |
+                 v
+    Human and fairness review before consequential use
+
+[OUTPUT]
+--------
+
+Assumptions turn a numeric result into an evidence-based decision. This toy dataset is
+suitable for learning calculations, not for proving that a student prediction system is
+safe or effective.
+
+
+========================================================================================
+21. WHAT THE MODEL LEARNED — AND WHAT IT DID NOT LEARN
+========================================================================================
+
+----------------------------------------------------------------------------------------
+21.1 WHAT IT LEARNED
+----------------------------------------------------------------------------------------
+
+From eight training rows, the model learned four numeric parameters:
+
+    b0 = 70  : reference prediction at centered inputs
+    b1 = 8   : change per two study hours, holding other inputs fixed
+    b2 = 5   : change per ten attendance percentage points, holding others fixed
+    b3 = 3   : deviation for each preparation code; Yes versus No differs by 6
+
+It learned a compact additive pattern that maps three usable inputs to one continuous
+prediction.
+
+----------------------------------------------------------------------------------------
+21.2 WHAT IT DID NOT LEARN
+----------------------------------------------------------------------------------------
+
+The model did not learn:
+
+  - causal effects of studying, attendance, or preparation;
+  - the effect of parental education, because it was intentionally excluded;
+  - prior subject knowledge, teaching quality, health, sleep, motivation, language,
+    accessibility needs, exam difficulty, or many other relevant factors;
+  - complex curves or thresholds;
+  - reliable performance across real schools or demographic groups;
+  - a probability distribution or uncertainty interval around each prediction;
+  - whether a student "deserves" an opportunity;
+  - any information beyond the supplied rows and feature definitions.
+
+    World of factors affecting a score
+    +-------------------------------------------------------------+
+    | prior knowledge | teacher | health | resources | difficulty |
+    | motivation      | sleep   | access | language  | many more  |
+    +-------------------------------------------------------------+
+                    only three measured inputs
+                              |
+                              v
+                    Linear regression model
+
+----------------------------------------------------------------------------------------
+21.3 THE POSSIBLE INTERACTION TERM
+----------------------------------------------------------------------------------------
+
+The residual checkerboard suggested an interaction between study hours and attendance.
+One extended formula could be:
+
+    y-hat = b0 + b1*x1 + b2*x2 + b3*x3 + b12*(x1*x2)
+
+WHY WOULD WE USE THIS FORMULA?
+
+The product x1*x2 allows the study-hours contribution to depend on attendance. It can
+represent a combined effect that separate addition cannot express.
+
+WHAT DOES EACH NEW COMPONENT MEAN?
+
+    x1*x2 = interaction feature formed by multiplying transformed hours and attendance
+    b12   = strength and direction of that interaction
+
+HOW WOULD IT APPLY TO THE TRAINING DATA?
+
+For training values of -1 and +1:
+
+    x1 and x2 same sign      -> x1*x2 = +1 -> add b12
+    x1 and x2 opposite signs -> x1*x2 = -1 -> subtract b12
+
+The current residuals are +2 for the first case and -2 for the second. Setting b12 = 2
+would remove all eight training residuals in this handcrafted table.
+
+WHY NOT IMMEDIATELY DECLARE IT THE BETTER MODEL?
+
+    Perfect training fit
+           |
+           v
+    Could be real structure OR could be design noise / overfitting
+           |
+           v
+    Need more data + validation + domain reasoning
+
+Eight rows are too few to justify expanding the model confidently. We identified a
+candidate improvement, but we did not use the held-out test answers to redesign and then
+claim the same test as final proof.
+
+----------------------------------------------------------------------------------------
+21.4 WHY PARENTAL EDUCATION WAS NOT USED
+----------------------------------------------------------------------------------------
+
+The dataset includes Parental_Education so the lesson can distinguish "available" from
+"appropriate for the decision." It may encode access, historical inequality, or
+socioeconomic conditions. Using it to determine individual educational opportunity could
+reinforce those patterns.
+
+    Feature available
+          |
+          v
+    Is it relevant, lawful, reliable, and appropriate for this intended use?
+       /                           \
+      no                           yes
+      |                             |
+      v                             v
+    exclude and document       test value, fairness, stability,
+                               privacy, and stakeholder impact
+
+Exclusion does not automatically make a system fair; other variables can act as proxies.
+It is one documented decision in a broader fairness review.
+
+[OUTPUT]
+--------
+
+The model learned associations in a deliberately limited table. Its simplicity makes it
+understandable, but that simplicity also defines what it cannot know.
+
+
+========================================================================================
+22. HOW TO IMPROVE THIS PROJECT RESPONSIBLY
+========================================================================================
+
+Improvement is not just "try a more complex algorithm." Start with evidence and the
+actual decision the model is meant to support.
+
+    Clarify purpose
+         |
+         v
+    Improve data and measurement
+         |
+         v
+    Establish honest validation
+         |
+         v
+    Compare suitable models
+         |
+         v
+    Review errors, fairness, uncertainty, and usability
+         |
+         v
+    Pilot carefully -> monitor -> revise or retire
+
+----------------------------------------------------------------------------------------
+22.1 DATA IMPROVEMENTS
+----------------------------------------------------------------------------------------
+
+  1. Collect many more students across relevant schools, terms, subjects, and score
+     ranges.
+  2. Define every feature consistently. For example, specify the period and method used
+     to measure study hours.
+  3. Record data quality flags instead of silently guessing missing values.
+  4. Capture prior achievement or curriculum information only when justified, lawful,
+     and appropriate.
+  5. Document who is missing from the dataset and why.
+  6. Prevent duplicates and train/test leakage.
+
+----------------------------------------------------------------------------------------
+22.2 VALIDATION IMPROVEMENTS
+----------------------------------------------------------------------------------------
+
+With sufficient data, use three distinct roles:
+
+    Training set   -> fit coefficients
+    Validation set -> compare choices and tune the approach
+    Test set       -> one protected final estimate
+
+For limited data, cross-validation can rotate which part is held out:
+
+    Fold 1: [TEST][TRAIN][TRAIN][TRAIN][TRAIN]
+    Fold 2: [TRAIN][TEST][TRAIN][TRAIN][TRAIN]
+    Fold 3: [TRAIN][TRAIN][TEST][TRAIN][TRAIN]
+    Fold 4: [TRAIN][TRAIN][TRAIN][TEST][TRAIN]
+    Fold 5: [TRAIN][TRAIN][TRAIN][TRAIN][TEST]
+                         |
+                         v
+              combine validation metrics
+
+If students have repeated records, keep every record for the same student in the same
+fold. If the real task predicts future cohorts, prefer a time-based evaluation.
+
+----------------------------------------------------------------------------------------
+22.3 MODEL IMPROVEMENTS TO COMPARE
+----------------------------------------------------------------------------------------
+
+  - Add carefully justified interaction terms.
+  - Add nonlinear terms when residual plots and domain knowledge support them.
+  - Use regularization when many related features make coefficients unstable.
+  - Compare with a decision tree or other suitable regression model.
+  - Retain the simple baseline and simple linear model as reference points.
+
+Complexity ladder:
+
+    Mean baseline
+         |
+         v
+    Multiple linear regression
+         |
+         v
+    + justified interactions / curves
+         |
+         v
+    More flexible model
+
+Move upward only when validation shows a meaningful benefit that justifies reduced
+simplicity, added maintenance, and new risks.
+
+----------------------------------------------------------------------------------------
+22.4 EVALUATION IMPROVEMENTS
+----------------------------------------------------------------------------------------
+
+Report more than one average:
+
+  - MAE for typical error in score points;
+  - RMSE for sensitivity to larger errors;
+  - residual direction for systematic high/low predictions;
+  - error percentiles, such as the 90th-percentile absolute error;
+  - subgroup results where ethical and lawful;
+  - uncertainty intervals;
+  - performance across schools, subjects, and time;
+  - percentage of impossible or out-of-range predictions;
+  - comparison with educator and baseline performance when appropriate.
+
+----------------------------------------------------------------------------------------
+22.5 PRODUCT AND SAFETY IMPROVEMENTS
+----------------------------------------------------------------------------------------
+
+This model should be framed as an early-support signal, not a final judgment.
+
+Safer workflow:
+
+    Model estimates possible support need
+                    |
+                    v
+    Educator reviews context and uncertainty
+                    |
+                    v
+    Student gets supportive, non-punitive intervention
+                    |
+                    v
+    Outcome and feedback monitored
+                    |
+                    v
+    Appeal/correction path remains available
+
+Never use the toy model to deny enrollment, label ability, punish students, or allocate
+high-impact opportunities without appropriate evidence, governance, and human review.
+
+----------------------------------------------------------------------------------------
+22.6 MONITORING AFTER A REAL DEPLOYMENT
+----------------------------------------------------------------------------------------
+
+    New observations arrive
+             |
+             v
+    Compare predictions with eventual outcomes
+             |
+             v
+    Check drift, overall error, subgroup error, data quality
+             |
+       +-----+-----+
+       |           |
+    stable       degraded / harmful
+       |           |
+       v           v
+    continue     investigate, pause, retrain,
+    monitoring   redesign, or retire
+
+A model can become outdated when curricula, exams, attendance policy, student behavior,
+or data collection changes.
+
+[OUTPUT]
+--------
+
+The next version should be driven first by representative data, honest validation, and
+safe intended use—then by model complexity.
+
+
+========================================================================================
+23. SIMPLE MODEL EVALUATION REPORT
+========================================================================================
+
+PROJECT
+-------
+
+Student Score Predictor — conceptual multiple linear regression demonstration.
+
+PURPOSE
+-------
+
+Teach how several inputs become one continuous prediction and how predictions are
+evaluated. The artifact is not a deployable student decision system.
+
+DATA
+----
+
+    Total rows:       12 manually constructed students
+    Training rows:     8
+    Test rows:         4
+    Target:            Actual_Exam_Score
+    Used features:     Hours_Studied, Attendance_Percent, Test_Preparation
+    Excluded feature:  Parental_Education after proxy/fairness review
+
+MODEL
+-----
+
+    Predicted Score = 70 + 8*x1 + 5*x2 + 3*x3
+
+    x1 = (Hours - 5) / 2
+    x2 = (Attendance - 80) / 10
+    x3 = -1 for No and +1 for Yes
+
+RESULTS
+-------
+
+    +----------------+-------------------+-------------------+
+    | Metric         | Training          | Test              |
+    +----------------+-------------------+-------------------+
+    | MAE            | 2.00 points       | 1.25 points       |
+    | MSE            | 4.00              | 1.75              |
+    | RMSE           | 2.00 points       | 1.32 points       |
+    | R-squared      | 0.961             | 0.994             |
+    | Mean residual  | 0.00 points       | +0.50 point       |
+    +----------------+-------------------+-------------------+
+
+    Test baseline MAE:  15.50 points
+    Test model MAE:      1.25 points
+
+INTERPRETATION
+--------------
+
+On four handcrafted test examples, predictions were 1.25 points from actual scores on
+average. The largest absolute test error was 1.5 points. Positive mean residual indicates
+slight average underprediction, but four rows are far too few to infer stable bias.
+
+KNOWN LIMITATIONS
+-----------------
+
+  - synthetic, extremely small, balanced data;
+  - feature values and outcomes designed for manual arithmetic;
+  - no reliable subgroup analysis;
+  - no external school, subject, or time validation;
+  - no uncertainty intervals;
+  - possible unmodeled study-attendance interaction;
+  - possible out-of-range predictions under extrapolation;
+  - associations must not be treated as causes.
+
+DECISION
+--------
+
+    Concept-learning objective: PASS
+    Real-world deployment:      NOT READY
+
+REASON
+------
+
+The calculations correctly demonstrate multiple regression, but the evidence does not
+support decisions about real students.
+
+NEXT ACTIONS
+------------
+
+Collect representative data, define a support-oriented use case, create a protected
+validation design, compare baselines and models, quantify uncertainty, conduct subgroup
+and fairness reviews, and involve educators and students in the design.
+
+
+========================================================================================
+24. COMMON MISTAKES AND HOW TO CORRECT THEM
+========================================================================================
+
+MISTAKE 1 — CALLING A NUMERIC SCORE A CLASSIFICATION PROBLEM
+-----------------------------------------------------------
+
+If the target is an exact score such as 79.5, the task is regression. If the target is a
+category such as Pass/Fail, it is classification.
+
+    continuous number -> regression
+    category label    -> classification
+
+MISTAKE 2 — USING ONLY STUDY HOURS WHEN OTHER VALID SIGNALS MATTER
+-----------------------------------------------------------------
+
+Single-feature regression cannot distinguish two students with equal study hours but
+different attendance or preparation. Multiple regression can condition on several
+inputs, although it still cannot include every real-world factor.
+
+MISTAKE 3 — USING EVERY AVAILABLE COLUMN
+-----------------------------------------
+
+Availability does not establish relevance, fairness, legality, reliability, or safety.
+Perform feature review and document exclusions.
+
+MISTAKE 4 — FEEDING TEXT DIRECTLY INTO A NUMERIC FORMULA
+--------------------------------------------------------
+
+The formula cannot multiply the word "Yes" by 3. Define a meaningful encoding and keep
+that mapping identical during training and prediction.
+
+MISTAKE 5 — TRANSFORMING TRAIN AND TEST DIFFERENTLY
+---------------------------------------------------
+
+The test and new rows must use the training transformation: center Hours at 5, scale by
+2; center Attendance at 80, scale by 10; encode preparation as -1/+1.
+
+MISTAKE 6 — USING THE TEST SET TO LEARN COEFFICIENTS
+----------------------------------------------------
+
+That leaks answer information into training and makes final evaluation optimistic.
+
+MISTAKE 7 — ADDING SIGNED RESIDUALS TO MEASURE TYPICAL ERROR
+-------------------------------------------------------------
+
+Positive and negative residuals can cancel. Use MAE or squared-error metrics for error
+size; use mean residual separately to examine direction.
+
+MISTAKE 8 — INTERPRETING MSE AS ORDINARY SCORE POINTS
+-----------------------------------------------------
+
+MSE is in squared points. Use RMSE or MAE for a result stated in score points.
+
+MISTAKE 9 — TREATING HIGH R-SQUARED AS PROOF OF DEPLOYMENT QUALITY
+------------------------------------------------------------------------
+
+R-squared does not prove causality, fairness, data representativeness, calibration,
+safety, or future stability. It can also be misleading on tiny designed data.
+
+MISTAKE 10 — CLAIMING A COEFFICIENT IS CAUSAL
+----------------------------------------------
+
+"Associated with +4 predicted points while included inputs are fixed" is justified.
+"One more hour will cause exactly four more points" is not justified here.
+
+MISTAKE 11 — TRUSTING EXTREME EXTRAPOLATION
+-------------------------------------------
+
+Linear regression keeps extending its line, possibly beyond 0–100. Define a valid range
+and investigate out-of-range inputs.
+
+MISTAKE 12 — CHANGING THE MODEL AFTER EVERY TEST RESULT
+-------------------------------------------------------
+
+Repeatedly tuning on the test set turns it into a validation set. Reserve a new protected
+test set for the final estimate.
+
+MISTAKE 13 — REMOVING AN UNUSUAL STUDENT TO IMPROVE THE METRIC
+--------------------------------------------------------------
+
+Investigate data provenance. Correct verified errors; retain and study valid rare cases.
+
+MISTAKE 14 — USING A SCORE PREDICTION AS A LABEL OF ABILITY
+-----------------------------------------------------------
+
+A prediction is a fallible estimate based on limited measurements. It must not define a
+student's ability, potential, or worth.
+
+MISTAKE 15 — REPORTING ONLY ONE AVERAGE METRIC
+----------------------------------------------
+
+Use multiple metrics, residual plots, subgroup checks, uncertainty, and operational
+outcomes. Averages can hide severe mistakes.
+
+[OUTPUT]
+--------
+
+Good regression practice connects arithmetic, data quality, honest evaluation, careful
+interpretation, and responsible use.
+
+
+========================================================================================
+25. COMPLETE PROJECT RECAP
+========================================================================================
+
+----------------------------------------------------------------------------------------
+25.1 THE ENTIRE PROJECT ON ONE PAGE
+----------------------------------------------------------------------------------------
+
+    QUESTION
+    Predict a continuous exam score from several student-related inputs
+        |
+        v
+    MANUAL DATASET
+    12 rows: Hours, Attendance, Preparation, Parental Education, Actual Score
+        |
+        v
+    FEATURE REVIEW
+    Use Hours + Attendance + Preparation
+    Exclude Parental Education from prediction after proxy/fairness review
+        |
+        v
+    QUALITY CHECKS
+    Validate ranges, categories, missing values, duplicates, definitions
+        |
+        v
+    TRANSFORMATION
+    x1=(Hours-5)/2, x2=(Attendance-80)/10, x3=-1 or +1
+        |
+        v
+    SPLIT
+    8 training rows | 4 untouched test rows
+        |
+        v
+    BASELINE
+    Always predict training mean = 70
+        |
+        v
+    TRAIN
+    Learn y-hat = 70 + 8*x1 + 5*x2 + 3*x3
+        |
+        v
+    PREDICT TEST ROWS
+    60.5, 79.5, 92.5, 47.5
+        |
+        v
+    COMPARE WITH ACTUALS
+    61, 81, 91, 49
+        |
+        v
+    EVALUATE
+    MAE=1.25 | RMSE=1.32 | R-squared=0.994 | mean residual=+0.50
+        |
+        v
+    DIAGNOSE
+    Inspect residuals, assumptions, ranges, subgroups, leakage, uncertainty
+        |
+        v
+    DECIDE
+    Excellent arithmetic demonstration; insufficient evidence for real deployment
+
+----------------------------------------------------------------------------------------
+25.2 INPUT-TO-PREDICTION RECAP
+----------------------------------------------------------------------------------------
+
+    +--------------------+     +--------------------+     +--------------------+
+    | Hours studied      |     | Attendance         |     | Preparation        |
+    | 5.5 hours          |     | 88%                |     | Yes                |
+    +---------+----------+     +---------+----------+     +---------+----------+
+              |                          |                          |
+              v                          v                          v
+          x1 = 0.25                  x2 = 0.80                   x3 = +1
+              |                          |                          |
+              v                          v                          v
+          8*x1 = +2                  5*x2 = +4                   3*x3 = +3
+              \__________________________|__________________________/
+                                         |
+                                         v
+                                 base 70 + 2 + 4 + 3
+                                         |
+                                         v
+                              PREDICTED SCORE = 79
+
+----------------------------------------------------------------------------------------
+25.3 METRIC SELECTION RECAP
+----------------------------------------------------------------------------------------
+
+    Question you want to answer                     Metric
+    ------------------------------------------------------------------------------
+    Typical miss in ordinary score points?          MAE
+    Penalize large errors more strongly?             MSE
+    Large-error-sensitive result in score points?    RMSE
+    Improvement over predicting the mean variation? R-squared
+    Tendency to predict too high or too low?          Mean residual
+
+No single metric answers every question.
+
+----------------------------------------------------------------------------------------
+25.4 FORMULA REFERENCE WITH PURPOSE
+----------------------------------------------------------------------------------------
+
+TRANSFORMATIONS
+---------------
+
+    x1 = (Hours - 5) / 2
+    x2 = (Attendance - 80) / 10
+    x3 = -1 for No, +1 for Yes
+
+Purpose: put inputs into centered, easy-to-interpret model units. The constants are
+training reference values, not universal facts.
+
+PREDICTION
+----------
+
+    y-hat = 70 + 8*x1 + 5*x2 + 3*x3
+
+Purpose: combine a reference score with the learned contribution of every included
+feature. y-hat is an estimate, not an actual result.
+
+RESIDUAL
+--------
+
+    Residual = y - y-hat
+
+Purpose: retain both error size and direction. Positive means underprediction; negative
+means overprediction under this definition.
+
+MAE
+---
+
+    MAE = average of |y - y-hat|
+
+Purpose: express typical error in exam points without cancellation.
+
+MSE
+---
+
+    MSE = average of (y - y-hat)^2
+
+Purpose: give large errors extra weight and provide the least-squares training objective.
+
+RMSE
+----
+
+    RMSE = square root of MSE
+
+Purpose: return squared error to the original exam-point unit.
+
+R-SQUARED
+---------
+
+    R-squared = 1 - SSE/SST
+
+Purpose: compare remaining squared error with the total variation around the mean.
+
+----------------------------------------------------------------------------------------
+25.5 BEGINNER GLOSSARY
+----------------------------------------------------------------------------------------
+
+    Actual value       The score the student actually obtained.
+    Baseline           A simple reference prediction a model should beat.
+    Categorical input  A value representing a group, such as Yes or No.
+    Coefficient        A learned weight controlling one feature's contribution.
+    Continuous target  A numeric outcome that can take many values.
+    Dataset split      Assignment of rows to training, validation, or testing roles.
+    Encoding           Converting a category into a numeric representation.
+    Extrapolation      Prediction outside the observed training range.
+    Feature            Information supplied to make a prediction.
+    Intercept          Prediction at the model's defined reference input.
+    Interpolation      Prediction within the observed training range.
+    Leakage            Information improperly reaching training from the target/future/test.
+    Model              A learned mapping from inputs to an output.
+    Parameter          A value learned during training, such as a coefficient.
+    Prediction         The model's estimated target value.
+    Regression         Prediction of a continuous numeric outcome.
+    Residual           Actual minus predicted value.
+    Target             The outcome the model is intended to predict.
+    Training           Learning model parameters from training examples.
+    Transformation     A consistent change from original input to model-ready value.
+
+[OUTPUT]
+--------
+
+You should now be able to trace any row from raw inputs through transformation,
+coefficient contributions, prediction, residual, metric, and responsible interpretation.
+
+
+========================================================================================
+26. PROJECT READINESS CHECKLIST
+========================================================================================
+
+Use this list before moving to implementation. Mark an item only when you can explain it
+in your own words.
+
+PROBLEM AND USE
+---------------
+
+    [ ] I can explain why predicting an exact score is regression.
+    [ ] I can state who uses the prediction and for what support-oriented purpose.
+    [ ] I can name prohibited or harmful uses.
+    [ ] I understand that prediction is not a judgment of ability or worth.
+
+DATA
+----
+
+    [ ] I can identify each row, feature, and target.
+    [ ] I can explain how every field is measured.
+    [ ] I can check missing values, duplicates, ranges, and categories.
+    [ ] I can separate "available" features from "appropriate" features.
+    [ ] I can explain why Parental_Education was not used here.
+
+TRANSFORMATION
+--------------
+
+    [ ] I can calculate x1 from study hours.
+    [ ] I can calculate x2 from attendance.
+    [ ] I can encode preparation as -1 or +1.
+    [ ] I know the same learned transformation must be applied to future inputs.
+
+TRAINING
+--------
+
+    [ ] I can explain b0, b1, b2, and b3.
+    [ ] I can calculate the coefficients in this balanced teaching table.
+    [ ] I know the manual shortcut does not replace general regression training.
+    [ ] I understand what least squares minimizes and why.
+
+PREDICTION
+----------
+
+    [ ] I can calculate a prediction from beginning to end.
+    [ ] I can separate base and feature contributions.
+    [ ] I can distinguish interpolation from extrapolation.
+    [ ] I can explain why a prediction can be wrong.
+
+EVALUATION
+----------
+
+    [ ] I can calculate and interpret a residual.
+    [ ] I can calculate MAE, MSE, RMSE, and R-squared by hand on small data.
+    [ ] I can explain why positive and negative errors must not cancel in MAE.
+    [ ] I can compare the model with a baseline.
+    [ ] I can keep the final test set separate from model selection.
+
+DIAGNOSIS AND RESPONSIBILITY
+----------------------------
+
+    [ ] I can identify a pattern in residuals.
+    [ ] I can explain linearity, additivity, independence, error spread, and outliers.
+    [ ] I know that association is not causation.
+    [ ] I can describe subgroup, fairness, privacy, and representativeness checks.
+    [ ] I can explain why this project is not deployment-ready.
+    [ ] I can propose a safer next version.
+
+If several boxes remain unclear, revisit the referenced section before implementing the
+project. Implementation should express an understood process, not hide it.
+
+
+========================================================================================
+27. PRACTICE QUESTIONS
+========================================================================================
+
+Try these without looking at Section 28. Write every intermediate step and state units.
+
+QUESTION 1
+----------
+
+Why is Student Score Predictor a regression problem rather than a classification problem?
+
+QUESTION 2
+----------
+
+For student S03, identify the three model features, the unused contextual field, the
+target, and the dataset split.
+
+QUESTION 3
+----------
+
+Transform this input: Hours = 6, Attendance = 70%, Preparation = No.
+
+QUESTION 4
+----------
+
+Use the model to predict the score for the input in Question 3.
+
+QUESTION 5
+----------
+
+If the actual score in Question 4 is 69, calculate the residual. Is it an overprediction
+or underprediction?
+
+QUESTION 6
+----------
+
+Explain the intercept 70 in the centered formula. Why is it easier to interpret than the
+raw-form intercept 7?
+
+QUESTION 7
+----------
+
+Holding other inputs fixed, what predicted change corresponds to:
+
+  a. two more study hours?
+  b. five more attendance percentage points?
+  c. changing preparation from No to Yes?
+
+QUESTION 8
+----------
+
+Given actual scores [60, 75, 90] and predictions [62, 72, 88], calculate each residual
+using Actual - Predicted and calculate MAE.
+
+QUESTION 9
+----------
+
+Using the same errors from Question 8, calculate MSE and RMSE.
+
+QUESTION 10
+-----------
+
+Why can signed residuals not be averaged to measure typical error size?
+
+QUESTION 11
+-----------
+
+What is the mean-prediction baseline used in this project, and why must a useful model be
+compared with it?
+
+QUESTION 12
+-----------
+
+S09 has Hours = 4, Attendance = 75%, Preparation = No. Reproduce its prediction and
+residual from the test set.
+
+QUESTION 13
+-----------
+
+Does test R-squared = 0.994 prove that the model is ready for real schools? Give at least
+four reasons for your answer.
+
+QUESTION 14
+-----------
+
+Why was Parental_Education retained in the dataset but excluded from the model?
+
+QUESTION 15
+-----------
+
+Explain the difference between interpolation and extrapolation. Classify a prediction at
+6 study hours and 85% attendance, then classify one at 15 hours and 100% attendance.
+
+QUESTION 16
+-----------
+
+Using the raw-unit formula, calculate the prediction for Hours = 15, Attendance = 100%,
+Preparation = Yes. What problem does the result reveal?
+
+QUESTION 17
+-----------
+
+The training residuals form a checkerboard across high/low hours and attendance. What
+possible missing model behavior does that suggest?
+
+QUESTION 18
+-----------
+
+Why should repeated exam records from the same student not be divided randomly across
+training and test sets?
+
+QUESTION 19
+-----------
+
+A model has overall mean residual zero, but it overpredicts one school by five points and
+underpredicts another by five points. Is the model unbiased for both schools? Explain.
+
+QUESTION 20
+-----------
+
+Design a plain-language evaluation sentence using test MAE = 1.25 and test RMSE = 1.32.
+Include the synthetic-data limitation.
+
+QUESTION 21
+-----------
+
+For a new student with Hours = 5, Attendance = 80%, Preparation = No, calculate the
+prediction. Then change only preparation to Yes and calculate the second prediction.
+
+QUESTION 22
+-----------
+
+Suppose the two absolute test errors are 1 and 9. Calculate MAE and RMSE. Which metric
+reacts more strongly to the large error, and why?
+
+QUESTION 23
+-----------
+
+Name five checks that must occur before a student prediction model could be piloted
+responsibly.
+
+QUESTION 24
+-----------
+
+Describe the complete journey of one new row from raw input to eventual monitoring.
+
+
+========================================================================================
+28. ANSWER KEY WITH EXPLANATIONS
+========================================================================================
+
+ANSWER 1
+--------
+
+The target is an exam score, a continuous numeric value. Regression predicts such a
+number. Classification would be appropriate if the target were a category such as
+Pass/Fail or support level.
+
+ANSWER 2
+--------
+
+S03 contains:
+
+    Model features: Hours_Studied = 3, Attendance_Percent = 90,
+                    Test_Preparation = No
+    Contextual unused field: Parental_Education = Postgraduate
+    Target: Actual_Exam_Score = 62
+    Split: Training
+
+ANSWER 3
+--------
+
+    x1 = (6 - 5) / 2 = 0.5
+    x2 = (70 - 80) / 10 = -1
+    x3 = -1 for No
+
+The values mean half of a two-hour unit above reference, one ten-point attendance unit
+below reference, and the No preparation category.
+
+ANSWER 4
+--------
+
+    y-hat = 70 + 8(0.5) + 5(-1) + 3(-1)
+          = 70 + 4 - 5 - 3
+          = 66
+
+Predicted score: 66 points.
+
+ANSWER 5
+--------
+
+    Residual = Actual - Predicted
+             = 69 - 66
+             = +3
+
+It is an underprediction by 3 points because the actual value is higher.
+
+ANSWER 6
+--------
+
+The centered intercept 70 is the predicted score at Hours = 5, Attendance = 80%, and the
+numeric center of the preparation coding. It is a useful reference level. The raw
+intercept 7 corresponds to zero hours, zero attendance, and No preparation, which is far
+outside the teaching data and is not a useful student profile.
+
+ANSWER 7
+--------
+
+    a. Two more hours change x1 by 1, so prediction changes by 8 points.
+    b. Five attendance percentage points change x2 by 0.5, so prediction changes by
+       5 * 0.5 = 2.5 points.
+    c. No (-1) to Yes (+1) changes x3 by 2, so prediction changes by 3 * 2 = 6 points.
+
+These are hold-other-things-fixed predictive associations.
+
+ANSWER 8
+--------
+
+    Residuals:
+      60 - 62 = -2
+      75 - 72 = +3
+      90 - 88 = +2
+
+    Absolute errors = 2, 3, 2
+
+    MAE = (2 + 3 + 2) / 3
+        = 7 / 3
+        = approximately 2.33 points
+
+ANSWER 9
+--------
+
+    Squared errors = (-2)^2, 3^2, 2^2 = 4, 9, 4
+
+    MSE = (4 + 9 + 4) / 3
+        = 17 / 3
+        = approximately 5.67 squared points
+
+    RMSE = square root of 5.67
+         = approximately 2.38 points
+
+ANSWER 10
+---------
+
+Positive and negative residuals cancel. For example, -5 and +5 average to zero even
+though both predictions are wrong by five points. MAE removes direction before averaging;
+mean residual is used separately to inspect direction.
+
+ANSWER 11
+---------
+
+The baseline always predicts the training mean score, 70. Comparison shows whether the
+features and fitted relationship add predictive value beyond a simple constant guess.
+Without a baseline, a metric has little context.
+
+ANSWER 12
+---------
+
+    x1 = (4 - 5) / 2 = -0.5
+    x2 = (75 - 80) / 10 = -0.5
+    x3 = -1
+
+    y-hat = 70 + 8(-0.5) + 5(-0.5) + 3(-1)
+          = 70 - 4 - 2.5 - 3
+          = 60.5
+
+    Residual = 61 - 60.5 = +0.5
+
+The model underpredicted S09 by 0.5 point.
+
+ANSWER 13
+---------
+
+No. At least these limitations prevent that conclusion:
+
+  1. only four test rows exist;
+  2. all rows are manually constructed;
+  3. the values were designed for clear arithmetic;
+  4. there is no external-school or future-cohort validation;
+  5. subgroup reliability and fairness are unknown;
+  6. uncertainty is not quantified;
+  7. R-squared does not establish causal validity or safe intended use.
+
+ANSWER 14
+---------
+
+It remains visible to teach that data availability and feature suitability are separate
+questions. It can act as a socioeconomic proxy and may encode unequal access. The lesson
+therefore excludes it from individual prediction while documenting the decision. The
+exclusion alone does not guarantee fairness.
+
+ANSWER 15
+---------
+
+Interpolation is prediction inside the training feature range; extrapolation is outside.
+Training spans 3–7 hours and 70%–90% attendance.
+
+    6 hours, 85% -> interpolation
+    15 hours, 100% -> extrapolation
+
+The second prediction extends the learned straight-line relationship beyond supporting
+data and is much less trustworthy.
+
+ANSWER 16
+---------
+
+Use P = 1 for Yes:
+
+    y-hat = 7 + 4(15) + 0.5(100) + 6(1)
+          = 7 + 60 + 50 + 6
+          = 123
+
+A 123 score is impossible on a 100-point exam. Ordinary linear regression is unbounded,
+and extreme extrapolation can create invalid outputs.
+
+ANSWER 17
+---------
+
+It suggests an interaction between hours and attendance: the relationship of study time
+with the score may depend on attendance, or vice versa. The product x1*x2 is one way to
+represent it, but more data and validation are needed before adding it confidently.
+
+ANSWER 18
+---------
+
+The model could recognize student-specific patterns already present in training rather
+than generalize to a new student. This leakage makes test performance too optimistic.
+Keep all records for one student in the same split.
+
+ANSWER 19
+---------
+
+No. Opposite errors cancel in the overall mean. Each school has a systematic five-point
+directional error. Evaluation must inspect relevant subgroups instead of trusting only
+the aggregate.
+
+ANSWER 20
+---------
+
+One suitable sentence is:
+
+    "Across four manually constructed test students, predictions were 1.25 exam points
+    away from actual scores on average (MAE), while the large-error-sensitive RMSE was
+    1.32 points; these teaching results do not estimate performance on real students."
+
+ANSWER 21
+---------
+
+At Hours = 5 and Attendance = 80%:
+
+    x1 = 0 and x2 = 0
+
+For No:
+
+    y-hat = 70 + 8(0) + 5(0) + 3(-1) = 67
+
+For Yes:
+
+    y-hat = 70 + 8(0) + 5(0) + 3(+1) = 73
+
+The predictive difference is 6 points.
+
+ANSWER 22
+---------
+
+    MAE = (1 + 9) / 2 = 5 points
+
+    MSE = (1^2 + 9^2) / 2
+        = (1 + 81) / 2
+        = 41
+
+    RMSE = square root of 41
+         = approximately 6.40 points
+
+RMSE reacts more strongly because squaring makes the error of 9 contribute 81 before
+averaging. MAE gives error size a linear contribution.
+
+ANSWER 23
+---------
+
+Any five well-explained items can include:
+
+  - define a supportive intended use and prohibited uses;
+  - collect representative real data with consistent definitions;
+  - prevent leakage and create honest train/validation/test splits;
+  - compare with meaningful baselines;
+  - inspect residuals, outliers, ranges, drift, and uncertainty;
+  - evaluate performance and error direction across relevant groups;
+  - review feature appropriateness, privacy, legality, and fairness;
+  - include educators and affected students in design;
+  - provide human review and correction/appeal paths;
+  - establish monitoring, pause, retraining, and retirement criteria.
+
+ANSWER 24
+---------
+
+    Validate raw values and definitions
+        -> apply the training transformations
+        -> multiply each transformed input by its learned coefficient
+        -> add the base score and contributions
+        -> check input range and prediction validity
+        -> communicate prediction with limitations and appropriate human review
+        -> wait for the actual outcome
+        -> calculate residual and evaluation metrics
+        -> monitor overall and subgroup performance, drift, and harm
+        -> continue, improve, pause, or retire based on evidence.
+
+
+========================================================================================
+END OF PROJECT
+========================================================================================
+
+The important achievement is not memorizing 70, 8, 5, and 3. It is being able to explain
+the entire chain:
+
+    problem -> data -> feature decision -> transformation -> training -> prediction
+            -> error -> evaluation -> diagnosis -> responsible decision
+
+Once that chain is clear, a later implementation becomes a translation of understood
+ideas instead of a collection of unexplained commands.

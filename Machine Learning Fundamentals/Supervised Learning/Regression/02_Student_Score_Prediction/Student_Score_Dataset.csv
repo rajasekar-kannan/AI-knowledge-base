@@ -1,0 +1,13 @@
+Student_ID,Hours_Studied,Attendance_Percent,Test_Preparation,Parental_Education,Actual_Exam_Score,Dataset_Split
+S01,3,70,No,School,56,Training
+S02,3,70,Yes,College,62,Training
+S03,3,90,No,Postgraduate,62,Training
+S04,3,90,Yes,School,68,Training
+S05,7,70,No,College,68,Training
+S06,7,70,Yes,Postgraduate,74,Training
+S07,7,90,No,School,82,Training
+S08,7,90,Yes,College,88,Training
+S09,4,75,No,School,61,Test
+S10,6,85,Yes,College,81,Test
+S11,8,95,Yes,Postgraduate,91,Test
+S12,2,65,No,School,49,Test
